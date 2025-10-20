@@ -1,0 +1,63 @@
+PGM &NomProc
+    dcl  &NomProc  *char  10
+    dcl  &NUMASI   *char   6
+    dcl  &Numreg   *dec  (10 0) 
+
+
+    Call NOEXISTE
+    /* Proceso que copia los ficheros Necesarios  */
+    Call CONTAB100 Parm('FSPAFAN')
+
+    /*--------------------------------*/
+    /* To Do FSPAFAN                  */
+    /*--------------------------------*/
+    CRTPF FILE(PARALELOC/ASIPAFAN) SRCFILE(FICHEROS/QDDSSRC) + 
+          SRCMBR(ASIFILEN) TEXT('Asientos FSPAFAN') +
+          OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
+          LVLCHK(*NO) AUT(*ALL)
+    MONMSG MSGID(CPF0000) EXEC(CLRPFM FILE(PARALELOC/ASIPAFAN))
+
+    CRTPF FILE(PARALELOC/DETEPAFA) SRCFILE(FICHEROS/QDDSSRC) +
+          SRCMBR(DETEVI) OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
+          LVLCHK(*NO) AUT(*ALL)
+    MONMSG MSGID(CPF0000) EXEC(CLRPFM FILE(PARALELOC/DETEPAFA))
+
+    CRTPF FILE(PARALELOC/CABEPAFA) SRCFILE(FICHEROS/QDDSSRC) +
+          SRCMBR(CABEVI) OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG MSGID(CPF0000) EXEC(CLRPFM FILE(PARALELOC/CABEPAFA))
+
+    /*------------------------------------------------------*/
+    /*OVRDBF     FILE(ASIFILEN) TOFILE(PARALELOC/ASIPAFAN)*/
+    CALL       PGM(PARALELOC/FSPAFAN) +
+               PARM(&NomProc          +
+                    'ASIPAFAN'        +
+                    'CABEPAFA'        +
+                    'DETEPAFA')                 
+    /*DLTOVR FILE(ASIFILEN)*/
+    /*------------------------------------------------------*/
+
+    RTVMBRD    FILE(PARALELOC/ASIPAFAN) NBRCURRCD(&NUMREG)
+    IF COND(&NUMREG > 0) THEN(DO)
+
+      CPYF  FROMFILE(PARALELOC/DETEPAFA) TOFILE(PARALELOC/DETEVI) +
+            MBROPT(*ADD) 
+      MONMSG MSGID(CPF0000)
+
+      CPYF  FROMFILE(PARALELOC/CABEPAFA) TOFILE(PARALELOC/CABEVI) +
+            MBROPT(*ADD) 
+      MONMSG MSGID(CPF0000)
+
+      /*-------------------------------------------------------*/
+      /* Esta copia al historico debe eliminarse en produccion */
+      /*-------------------------------------------------------*/
+      CPYF  FROMFILE(PARALELOC/ASIPAFAN) TOFILE(PARALELOC/ASI_HISTO) +
+            MBROPT(*ADD) 
+      MONMSG MSGID(CPF0000)
+      /*-------------------------------------------------------*/
+
+    ENDDO
+
+    /*--------------------------------*/
+    /* Fin del FSPAFAN New            */
+    /*--------------------------------*/    
+endpgm

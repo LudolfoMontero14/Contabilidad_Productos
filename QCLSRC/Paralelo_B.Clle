@@ -1,0 +1,21 @@
+/*---------------------------------------------------------------------*/
+/* Proceso que cambia la lista de Librerias y coloca solo la PARALELOC */
+/* Asi todos los procesos que se ejecutan luego vean los ficheros de   */
+/* esta Libreria                                                       */
+/*                                                                     */
+/* Fecha: Octubre 2025                                            LM   */
+/*---------------------------------------------------------------------*/
+PGM  &usrlibl 
+    dcl  &usrlibl  *char 2750   /* hasta 250 libs separadas por espacios */
+    dcl  &parlib   *char 10 Value('PARALELOC') 
+
+    /* Recuperar info del job */
+    rtvjoba usrlibl(&usrlibl) 
+
+    Chglibl Libl(&parlib) CURLIB(*CRTDFT)
+
+    /* Agregamos EXPLOTA de Ultimo para tomar de alli los otros PGMs */
+    ADDLIBLE LIB(EXPLOTA) POSITION(*LAST)
+    MONMSG  MSGID(CPF2111 CPF2103 CPF2110)   /* ya existe / no existe / sin autoridad */
+
+endpgm

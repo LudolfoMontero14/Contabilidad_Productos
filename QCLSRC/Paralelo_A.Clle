@@ -1,0 +1,25 @@
+PGM  &usrlibl
+    dcl  &usrlibl  *char 2750   /* hasta 250 libs separadas por espacios */
+    dcl  &LIB      *CHAR 10
+    dcl  &I        *DEC  (3 0)
+    dcl  &Pos      *Dec  (5 0)
+
+    /* =================== RESTAURAR =================== */
+    /* 1) Vaciar la user library list para evitar CPF0001 por tokenización */
+    CHGLIBL    LIBL(*NONE)
+
+    /* 2) Añadir una a una las bibliotecas originales (en orden) */
+    CHGVAR     &I 1
+    DOWHILE    (&I <= 250)
+      CHGVAR  &POS (((&I - 1) * 11) + 1)     /* <-- calcula la posición 1,11,21,... */
+      CHGVAR  &LIB %SST(&usrlibl &POS 10)    /* <-- aquí ya usamos variable, no expresión */
+
+      IF      COND(&LIB *NE ' ') THEN(DO)
+          ADDLIBLE LIB(&LIB) POSITION(*LAST)
+          MONMSG  MSGID(CPF2111 CPF2103 CPF2110)   /* ya existe / no existe / sin autoridad */
+      ENDDO
+
+      CHGVAR  &I (&I + 1)
+    ENDDO
+
+endpgm

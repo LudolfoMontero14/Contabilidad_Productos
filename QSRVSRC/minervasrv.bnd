@@ -1,0 +1,6 @@
+             STRPGMEXP  PGMLVL(*CURRENT) LVLCHK(*YES) +
+                          SIGNATURE('MINERVASRV_V0')
+
+             EXPORT     SYMBOL(MINERVASRV_Insertar_Auxiliar)
+
+             ENDPGMEXP

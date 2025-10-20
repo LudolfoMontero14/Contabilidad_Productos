@@ -1,0 +1,33 @@
+        /*------------------------------------------------------------------------
+        * OPECRTSRV - Binding Language
+        *------------------------------------------------------------------------*/
+
+         STRPGMEXP PGMLVL(*CURRENT) LVLCHK(*YES) SIGNATURE('OPECRTSRV_V4')
+           EXPORT SYMBOL(OPE_CRT_FILE)
+           EXPORT SYMBOL(GRABA_ADQUIRENCIA_PROPIA)
+           EXPORT SYMBOL(OPE_END_FILE)
+           EXPORT SYMBOL(CHAIN_OPERACIONES_TABLA_CODIGOS_ORIGEN)
+           EXPORT SYMBOL(Graba_datos_adicionales_autorizaciones)
+           EXPORT SYMBOL(Actualiza_numero_operacion_datos_adicionales)
+          ENDPGMEXP
+
+         STRPGMEXP PGMLVL(*PRV) LVLCHK(*YES) SIGNATURE('OPECRTSRV_V3')
+           EXPORT SYMBOL(OPE_CRT_FILE)
+           EXPORT SYMBOL(GRABA_ADQUIRENCIA_PROPIA)
+           EXPORT SYMBOL(OPE_END_FILE)
+           EXPORT SYMBOL(CHAIN_OPERACIONES_TABLA_CODIGOS_ORIGEN)
+         ENDPGMEXP
+
+         STRPGMEXP PGMLVL(*PRV) LVLCHK(*YES) SIGNATURE('OPECRTSRV_V2')
+           EXPORT SYMBOL(OPE_CRT_FILE)
+           EXPORT SYMBOL(GRABA_ADQUIRENCIA_PROPIA)
+           EXPORT SYMBOL(OPE_END_FILE)
+           EXPORT SYMBOL(CHAIN_OPERACIONES_TABLA_CODIGOS_ORIGEN)
+         ENDPGMEXP
+
+         STRPGMEXP PGMLVL(*PRV) LVLCHK(*YES) SIGNATURE('OPECRTSRV_V1')
+           EXPORT SYMBOL(OPE_CRT_FILE)
+           EXPORT SYMBOL(GRABA_ADQUIRENCIA_PROPIA)
+           EXPORT SYMBOL(OPE_END_FILE)
+         ENDPGMEXP
+

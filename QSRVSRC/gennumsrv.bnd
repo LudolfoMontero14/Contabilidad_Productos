@@ -1,0 +1,7 @@
+        /*------------------------------------------------------------------------
+        * GENNUMSRV - Binding Language
+        *------------------------------------------------------------------------*/
+         STRPGMEXP PGMLVL(*current) LVLCHK(*YES) SIGNATURE('GENNUMSRV_V1')
+           EXPORT SYMBOL(GENNUM_N)
+         ENDPGMEXP
+

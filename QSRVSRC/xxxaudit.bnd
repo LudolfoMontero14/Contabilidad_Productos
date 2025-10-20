@@ -1,0 +1,3 @@
+             STRPGMEXP  SIGNATURE('XXXAUDIT 1.0')
+             EXPORT     SYMBOL(audit_saveData)
+             ENDPGMEXP

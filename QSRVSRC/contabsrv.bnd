@@ -1,0 +1,15 @@
+        /*------------------------------------------------------------------------
+        * CONTABSRV - Binding Language
+        *------------------------------------------------------------------------*/
+         STRPGMEXP PGMLVL(*CURRENT) LVLCHK(*YES) SIGNATURE('CONTABSRV_V0')
+           EXPORT SYMBOL(CONTABSRV_Guardar_Evidencias_Contables_Cabecera)
+           EXPORT SYMBOL(CONTABSRV_Guardar_Evidencias_Contables_Detalle)
+           EXPORT SYMBOL(CONTABSRV_Borrar_Evidencias_Contables_Cabecera)
+           EXPORT SYMBOL(CONTABSRV_Obtener_Datos_Asiento)
+           EXPORT SYMBOL(CONTABSRV_Obtener_Datos_Parametrizados_Asiento)
+           EXPORT SYMBOL(CONTABSRV_Grabar_Asiento)
+           EXPORT SYMBOL(CONTABSRV_Asignar_Numero_Apunte)
+           EXPORT SYMBOL(CONTABSRV_Genera_Contabilidad_Totales_Producto)
+           EXPORT SYMBOL(CONTABSRV_Copy_Ficheros_Paralelo)
+           EXPORT SYMBOL(CONTABSRV_Registro_Auditoria_Paralelo)
+         ENDPGMEXP

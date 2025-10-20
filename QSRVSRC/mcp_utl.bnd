@@ -1,0 +1,10 @@
+        /*------------------------------------------------------------------------
+        * MCP_UTL  - Binding Language Utiles tarjetas socios Diners + MC
+        *------------------------------------------------------------------------*/
+         STRPGMEXP PGMLVL(*CURRENT) LVLCHK(*YES) SIGNATURE('MCP_UTL')
+           EXPORT SYMBOL(Modtarjn)
+           EXPORT SYMBOL(MCP_UTL_Generar_Pan_segun_tipo_Producto)
+           EXPORT SYMBOL(MCP_UTL_GenerateRandomNumber)
+           EXPORT SYMBOL(MCP_UTL_busca_hueco_10_NR)
+           EXPORT SYMBOL(MCP_UTL_calcula_ultimos_4D_PAN14)
+         ENDPGMEXP
