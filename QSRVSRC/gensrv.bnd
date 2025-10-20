@@ -1,0 +1,8 @@
+
+
+             STRPGMEXP  PGMLVL(*CURRENT) LVLCHK(*YES) +
+                          SIGNATURE('GENBNDV1')
+
+             EXPORT     SYMBOL(GENSRV_Obtener_Ayuda)
+
+             ENDPGMEXP

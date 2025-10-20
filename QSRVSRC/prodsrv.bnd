@@ -1,0 +1,6 @@
+        /*------------------------------------------------------------------------
+        * PRODSRV - Binding Language
+        *------------------------------------------------------------------------*/
+         STRPGMEXP PGMLVL(*CURRENT) LVLCHK(*YES) SIGNATURE('PRODSRVBND')
+           EXPORT SYMBOL(PRODSRV_Obtener_Procedencia)
+         ENDPGMEXP

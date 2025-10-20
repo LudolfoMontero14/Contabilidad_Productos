@@ -1,0 +1,6 @@
+        /*------------------------------------------------------------------------
+        * PAN_UTL  - Binding Language Utiles Generacion PAN  Diners + MC
+        *------------------------------------------------------------------------*/
+         STRPGMEXP PGMLVL(*CURRENT) LVLCHK(*YES) SIGNATURE('PAN_UTL')
+           EXPORT SYMBOL(PAN_UTL_Generar_aleatorio8d)
+         ENDPGMEXP

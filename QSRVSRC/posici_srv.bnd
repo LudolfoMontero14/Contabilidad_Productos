@@ -1,0 +1,12 @@
+      /*---------------------------------------------------------------*/
+      /* PROGRAMA....: Posicion pp limite                              */
+      /*                                                               */
+      /* MODULOS.....: POSICI_SRV                                       */
+      /* AUTOR ......:  JOSE DANIEL MARTIN PEREZ                       */
+      /*---------------------------------------------------------------*/
+
+      STRPGMEXP  PGMLVL(*CURRENT) LVLCHK(*YES)  SIGNATURE('POSICI_SRV_1')
+         EXPORT     SYMBOL(POSICI_SRV)
+         EXPORT     SYMBOL(POSICI_SRV_LIMITE)
+         EXPORT     SYMBOL(POSICI_SRV_PARTIDAS)
+      ENDPGMEXP

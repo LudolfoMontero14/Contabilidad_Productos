@@ -1,0 +1,14 @@
+
+
+             STRPGMEXP  PGMLVL(*CURRENT) LVLCHK(*YES) +
+                          SIGNATURE('ANXBNDV1')
+
+             EXPORT     SYMBOL(ANXSRV_OBTENER_SOLICITUDES)
+             EXPORT     SYMBOL(ANXSRV_Validar_Solicitud_Anexo)
+             EXPORT     SYMBOL(ANXSRV_Insertar_solicitud)
+             EXPORT     SYMBOL(ANXSRV_Actualiza_estatus)
+             EXPORT     SYMBOL(ANXSRV_Obtener_record)
+             EXPORT     SYMBOL(ANXSRV_Update_solicitud)
+             EXPORT     SYMBOL(ANXSRV_Delete_solicitud)
+
+             ENDPGMEXP

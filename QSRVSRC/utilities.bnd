@@ -1,0 +1,20 @@
+        /*------------------------------------------------------------------------
+        * UTILITIES - Binding Language
+        *------------------------------------------------------------------------*/
+         STRPGMEXP PGMLVL(*CURRENT) LVLCHK(*YES) SIGNATURE('UTILITIES')
+           EXPORT SYMBOL(Es_Mail_Valido)
+           EXPORT SYMBOL(Es_Numero_Valido)
+           EXPORT SYMBOL(Enviar_Mail)
+           EXPORT SYMBOL(Enviar_Mail_V2)
+           EXPORT SYMBOL(Obtener_Remitente_Mail)
+           EXPORT SYMBOL(Obtener_Destinatarios_Mail)
+           EXPORT SYMBOL(Obtener_Destinatarios_Mail_En_Copia)
+           EXPORT SYMBOL(Obtener_Destinatarios_Mail_En_Copia_Oculta)
+           EXPORT SYMBOL(Obtener_Firma_Mail)
+           EXPORT SYMBOL(Obtener_Logo_Mail)
+           EXPORT SYMBOL(Informa_Linea_IFS)
+           EXPORT SYMBOL(Enviar_Mail_Sin_Lista_Dist)
+           EXPORT SYMBOL(Escribir_EnvMailF)
+           EXPORT SYMBOL(Obtener_Num_CtlProces)
+           EXPORT SYMBOL(Informa_Linea_IFS_Sin_Trim)
+         ENDPGMEXP

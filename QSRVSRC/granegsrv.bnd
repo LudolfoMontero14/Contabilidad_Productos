@@ -1,0 +1,14 @@
+      /*---------------------------------------------------------------*/
+      /* PROGRAMA....: LISTA NEGRA MC PANTOKEN/DINERS LN TIPO D        */
+      /*                                                               */
+      /* MODULOS.....: GRANEGSRV                                       */
+      /* AUTOR ......:  JOSE DANIEL MARTIN PEREZ                       */
+      /*---------------------------------------------------------------*/
+
+      STRPGMEXP  PGMLVL(*CURRENT) LVLCHK(*YES)  SIGNATURE('GRANEGSRV_1')
+         EXPORT     SYMBOL(GRANEGSRV)
+         EXPORT     SYMBOL(GRANEGSRV_ALTA)
+         EXPORT     SYMBOL(GRANEGSRV_BAJA)
+         EXPORT     SYMBOL(GRANEGSRV_CONSULTA)
+         EXPORT     SYMBOL(GRANEGN)
+      ENDPGMEXP
