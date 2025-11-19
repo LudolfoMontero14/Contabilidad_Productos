@@ -1,7 +1,0 @@
-        /*------------------------------------------------------------------------
-        * DATFLXSRV - Binding Language
-        *------------------------------------------------------------------------*/
-         STRPGMEXP PGMLVL(*CURRENT) LVLCHK(*YES) SIGNATURE('DATAFLXSRVBND')
-           EXPORT SYMBOL(DATFLXSRV_Grabar_Alta_Tarjeta)
-           EXPORT SYMBOL(DATFLXSRV_Grabar_Baja_Tarjeta)
-         ENDPGMEXP

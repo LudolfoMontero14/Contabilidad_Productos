@@ -1,7 +1,0 @@
-        /*------------------------------------------------------------------------
-        * ACUTOTSRV - Binding Language
-        *------------------------------------------------------------------------*/
-         STRPGMEXP PGMLVL(*current) LVLCHK(*YES) SIGNATURE('ACUTOTSRV_V1')
-           EXPORT SYMBOL(ACUTOT_N)
-         ENDPGMEXP
-

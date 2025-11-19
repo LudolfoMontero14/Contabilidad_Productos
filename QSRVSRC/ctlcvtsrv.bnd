@@ -1,6 +1,0 @@
-        /*------------------------------------------------------------------------
-        * CTLCVTSRV - Binding Language
-        *------------------------------------------------------------------------*/
-         STRPGMEXP PGMLVL(*CURRENT) LVLCHK(*YES) SIGNATURE('CTLCVTSRVBND')
-           EXPORT SYMBOL(CTLCVTSRV_Grabar_Incidencia)
-         ENDPGMEXP

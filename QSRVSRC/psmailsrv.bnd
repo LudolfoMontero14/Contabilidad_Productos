@@ -1,6 +1,0 @@
-        /*------------------------------------------------------------------------
-        * PSMAILSRV - Binding Language
-        *------------------------------------------------------------------------*/
-         STRPGMEXP PGMLVL(*CURRENT) LVLCHK(*YES) SIGNATURE('PARSE_ENVMAILF')
-           EXPORT SYMBOL(Parsear_Correo)
-         ENDPGMEXP
