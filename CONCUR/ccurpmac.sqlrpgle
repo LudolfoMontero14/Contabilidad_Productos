@@ -7,7 +7,7 @@
       *
       *      FORMATO: 401   -DETALLES-   (VENDOR INVOICE TRANSACTION)
       *********************************************************************
-     FOPAGECOLG7IF   E           K DISK    EXTFILE(LABOPAGE)         USROPN     OPAGECO_B (PA/PAVC)
+       //FOPAGECOLG7IF   E       K DISK    EXTFILE(LABOPAGE)         USROPN     OPAGECO_B (PA/PAVC)
      FOPAGECOLGDIF   E           K DISK    RENAME(OPAGCOW:OPAGTRMI)  USROPN     OPAGECO_B (BAGENCONB
        // Solo cuando vienen del BAGENCON_VC
      FOPAGEVCLG8IF   E           K DISK    RENAME(OPAGCOW:OPALG8)               OPAGECO_VC
@@ -81,17 +81,17 @@
             LABOPAGE = 'OPAGEVCLG7';
           ENDIF;
 
-          OPEN OPAGECOLG7;
+          //OPEN OPAGECOLG7;
 
-          CHAIN (NUDES:SOCIO) OPAGCOW;           //OPAGECOLG7 / OPAGEVCLG7
+          //CHAIN (NUDES:SOCIO) OPAGCOW;           //OPAGECOLG7 / OPAGEVCLG7
           // Si no encuentra registro en OPAGECO* lo busca por numero transaccion minerva
-          IF NOT %FOUND(OPAGECOLG7);
+          //IF NOT %FOUND(OPAGECOLG7);
             If PROCESO = 'V';
               CHAIN (SOCIO:TRANMIN) OPAGEVCLG8; // Lee OPAGECO_VC
             Else;
               CHAIN (SOCIO:TRANMIN) OPAGECOLI3; // Lee OPAGECO_B
             EndIf;
-          ENDIF;
+          //ENDIF;
           CHAIN (NUDES:SOCIO:FECONSU) RIREGXV;   //  OPCARXV
         ENDIF;
 

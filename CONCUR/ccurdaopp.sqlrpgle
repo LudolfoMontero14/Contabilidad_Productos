@@ -7,7 +7,7 @@
       *
       *********************************************************************
      FPACONLGSG IF   E           K DISK    EXTFILE(LABPA)            USROPN     PA/PAVC
-     FOPAGECOLG7IF   E           K DISK    EXTFILE(LABOPAGE)         USROPN     OPAGECO_B (PA/PAVC)
+       //FOPAGECOLG7IF   E    K DISK    EXTFILE(LABOPAGE)         USROPN     OPAGECO_B (PA/PAVC)
      FOPAGECOLGDIF   E           K DISK    RENAME(OPAGCOW:OPAGTRMI)  USROPN     OPAGECO_B (BAGENCONB
       // Solo cuando vienen del BAGENCON_VC
      FOPAGEVCLG8IF   E           K DISK    RENAME(OPAGCOW:OPALG8)               OPAGECO_VC
@@ -127,19 +127,19 @@
             LABPA    = 'PACONLGSGV';  // PAVC
           ENDIF;
 
-          OPEN OPAGECOLG7;
+          //OPEN OPAGECOLG7;
           OPEN PACONLGSG;
 
           CHAIN (SOCIO:NUDES) PPA;      //  PACONLGSG  / PACONLGSGV 
-          CHAIN (NUDES:SOCIO) OPAGCOW;  //  OPAGECOLG7 / OPAGECO_B 
+          //CHAIN (NUDES:SOCIO) OPAGCOW;  //  OPAGECOLG7 / OPAGECO_B 
           // Si no encuentra registro en OPAGECO* lo busca por numero transaccion minerva
-          IF NOT %FOUND(OPAGECOLG7);
+          //IF NOT %FOUND(OPAGECOLG7);
             If PROCESO = 'V';
               CHAIN (SOCIO:TRANMIN) OPAGEVCLG8; // Lee OPAGECO_VC
             Else;
               CHAIN (SOCIO:TRANMIN) OPAGECOLI3; // Lee OPAGECO_B
             EndIf;
-          ENDIF;
+          //ENDIF;
           CHAIN (PA_PREFOR:SOCIO) RIREGXD; //  OPGENXDL4  
           CHAIN WNUMES ESTA1W;
           CHAIN EPROPV INPROW;

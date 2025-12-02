@@ -351,7 +351,441 @@
     F401C10  Char(48)        Inz('');         // CUSTOM FIED10 -REF10
     F401LIB  Char(777)       Inz('');         // RESERVADO - LIBRE
   End-DS;
+  dcl-ds dsTRANSACTPL qualified template;
+    AGNUMAGE           packed(4:0);      // No. agencia
+    HONUMFIC           packed(9:0);      // No. fichero
+    GENUMTRA           packed(9:0);      // Nº Transacción interno
+    GETIPRE            char(2);          // Tipo registro
+    GENUTRAN           char(15);         // No. Transacción
+    GENUMTAR           packed(19:0);     // No. tarjeta
+    GEPROOV            char(35);         // Nombre proveedor
+    GEFEINSE           packed(8:0);      // Inicio servicio (AAAAMMDD)
+    GEFEFISE           packed(8:0);      // Final servicio (AAAAMMDD)
+    GECIUDOR           char(35);         // Ciudad origen
+    GECOISOSA          char(2);          // ISO-país origen
+    GEPAISA            char(35);         // País origen
+    GECIUDES           char(35);         // Ciudad destino
+    GECOISOPD          char(2);          // ISO-país destino
+    GEPAILLE           char(35);         // País destino
+    GENOMPA            char(35);         // Nombre viajero
+    GEFECOMP           packed(8:0);      // Fecha venta (AAAAMMDD)
+    GENUFACT           char(20);         // Factura agencia
+    GEFEFAG            packed(8:0);      // Fecha factura (AAAAMMDD)
+    GENUALBA           char(20);         // Albarán agencia
+    GEIMPOP            packed(15:0);     // Importe operación
+    GESIGIMOP          char(1);          // Signo
+    GEISOMON           packed(3:0);      // Código moneda
+    GEIMNETA           packed(15:0);     // Importe neto
+    GEIMTASA           packed(15:0);     // Tasas aeroportuarias
+    GEISIIVA1          packed(15:0);     // Neto sujeto-IVA-1
+    GEIMIVA1           packed(15:0);     // Importe IVA-1
+    GEPOIVA1           packed(5:0);      // Porcentaje IVA-1
+    GEISIIVA2          packed(15:0);     // Neto sujeto-IVA-2
+    GEIMIVA2           packed(15:0);     // Importe IVA-2
+    GEPOIVA2           packed(5:0);      // Porcentaje IVA-2
+    GEISIIVA3          packed(15:0);     // Neto sujeto-IVA-3
+    GEIMIVA3           packed(15:0);     // Importe IVA-3
+    GEPOIVA3           packed(5:0);      // Porcentaje IVA-3
+    GEINOIVA1          packed(15:0);     // Neto no-sujeto-IVA
+    GESERFEE           char(1);          // Cargo emisión
+    GENUMDOC           char(20);         // No. documento
+    GETIPODOC          char(1);          // Tipo documento
+    GETOURCO           char(15);         // Tour code
+    GENUMAUD           packed(6:0);      // No. autorización
+    GENUCOPV           packed(8:0);      // Comercio DC-PV
+    GENUCOFA           packed(8:0);      // Comercio DC-facturador
+    GENOTPV            char(1);          // ID fact. comercio
+    GENUIATA           packed(8:0);      // No. IATA
+    GETARCON           char(1);          // ID conciliación
+    GEREF01            char(20);         // No. empleado
+    GEREF02            char(20);         // Departamento
+    GEREF03            char(20);         // Centro coste
+    GEREF04            char(20);         // Proyecto
+    GEREF05            char(20);         // Destino
+    GEREF06            char(20);         // Referencia 6
+    GEREF07            char(20);         // Referencia 7
+    GEREF08            char(20);         // Referencia 8
+    GEREF09            char(20);         // Referencia 9
+    GEREF10            char(20);         // Referencia 10
+    GEDESLIB           char(50);         // Descripción servicio
+    GENUSEC            packed(10:0);     // No. secuencia
+    GENADINE           packed(6:0);      // No. autorización (adicional)
+    GERECHA            packed(4:0);      // Cod. rechazo
+    ERCODEST           char(2);          // Código estado de Transacción
+    GEREGIST           varchar(1910);    // Registro GE
+    AAFECMOD           date;             // Fecha modificación
+    AAHORMOD           time;             // Hora modificación
+    AAUSUMOD           char(10);         // Usuario modificación
+    OP_NUMERO_OPERACION packed(13:0);    // Nº operación
+    TR_NUMERO_TRANSACCION int(10);       // Nº transacción (identity)
+    GETOKEN            varchar(32);      // Token
+    GEID               varchar(32);      // Id
+    GEUSOLIB           char(16);         // Usuario liberación
+  end-ds;
 
+  dcl-ds dsT_MSOCIOTPL qualified template;
+    snuso1 zoned(2);
+    nureal zoned(8);
+    snuso2 zoned(4);
+    scuote char(1);
+    snombr char(35);
+    sdomic char(35);
+    codpos char(5);
+    protg1 char(1);
+    slocal char(26);
+    sapepm zoned(2);
+    protg2 char(1);
+    zona zoned(4);
+    scarne char(26);
+    sextte char(1);
+    slibr0 char(2);
+    sexent zoned(1);
+    slibr1 char(1);
+    sfstat packed(8);
+    snomem char(30);
+    snomba char(25);
+    sdomba char(35);
+    slocba char(35);
+    szoban zoned(4);
+    snctac char(13);
+    smctac char(25);
+    sfpago zoned(1);
+    sconso zoned(1);
+    sconpm zoned(1);
+    snompm char(26);
+    sdupex char(1);
+    sofese zoned(1);
+    smescu zoned(2);
+    scobha char(1);
+    scltlf char(1);
+    stelef char(9);
+    stvper char(2);
+    smygas packed(9);
+    sfmgas packed(6);
+    scldni zoned(1);
+    sconba zoned(1);
+    snidem char(10);
+    splast char(1);
+    scodpo char(2);
+    scodvi char(2);
+    smotba char(1);
+    nbanco packed(5);
+    snoren char(1);
+    sopcam char(2);
+    sgtext packed(9);
+    slibr2 char(2);
+    snoatm char(1);
+    ssexo char(1);
+    sofepm zoned(1);
+    sacrec zoned(1);
+    smocta char(2);
+    sexnif zoned(1);
+    sf1sta packed(6);
+    sclpro zoned(2);
+    sconcu zoned(1);
+    sdiapa zoned(2);
+    ssubha zoned(4);
+    slibr3 char(1);
+    sfrec1 packed(8);
+    simpr1 packed(9);
+    slibr4 char(1);
+    sfrec2 packed(8);
+    simpr2 packed(9);
+    slibr5 char(1);
+    sfrec3 packed(8);
+    simpr3 packed(9);
+    slibr6 char(1);
+    sfrec4 packed(8);
+    simpr4 packed(9);
+    scodev char(1);
+    sfdevo packed(6);
+    snogts zoned(1);
+    slicre char(1);
+    sacreb char(4);
+    slibr7 char(4);
+    scordv zoned(1);
+    sreant zoned(1);
+    sacdni zoned(1);
+    smesre zoned(2);
+    sdiapr zoned(2);
+    scliex char(1);
+    snuide char(9);
+    svartr zoned(1);
+    scodnt char(1);
+    status zoned(1);
+    snnif char(9);
+    scatem zoned(1);
+    ssalan packed(9);
+    srecau packed(9);
+    shnore packed(9);
+    sdevim packed(9);
+    sdnodi packed(9);
+    sopser zoned(2);
+    simnse packed(9);
+    sopint zoned(2);
+    simint packed(9);
+    sdifal packed(9);
+    sdires packed(9);
+    soprpm zoned(2);
+    simppm packed(9);
+    simpap packed(9);
+    sopnco zoned(2);
+    simnco packed(9);
+    sanaci packed(8);
+    sprefi char(3);
+    scoper char(2);
+    savpm char(1);
+    svigpm char(2);
+    svipm char(1);
+    spoder zoned(1);
+    s zoned(2);
+    sauseo zoned(2);
+    sauser packed(9);
+    saucao zoned(2);
+    saucal packed(9);
+    sinfle zoned(1);
+    sin10c zoned(1);
+    sinffa zoned(1);
+    simppa packed(9);
+    sacc3 zoned(1);
+    sregem zoned(6);
+    ssegta char(26);
+    slibr8 char(2);
+    sapeca zoned(2);
+    sautin packed(9);
+    sautot packed(9);
+    sauino zoned(2);
+    sauoto zoned(2);
+    sporce zoned(2);
+    smofac char(1);
+    stipre char(1);
+    sporan zoned(2);
+    spenof packed(9);
+    spin char(8);
+    smusca char(1);
+    slibr9 char(1);
+    sfncaj packed(8);
+    sbchre zoned(4);
+    singre packed(8);
+    saltpm packed(8);
+    svigtr packed(10);
+    sfacrb packed(8);
+    scodpr packed(3);
+    soffset char(4);
+  end-ds;
+
+  dcl-ds dsESTA1Tpl qualified template;
+    numest zoned(7);
+    edig zoned(1);
+    estype char(2);
+    elib10 char(3);
+    eactpr zoned(2);
+    ecateg zoned(1);
+    eite zoned(3 : 2);
+    emodre zoned(3);
+    emodca zoned(4);
+    eexire zoned(3);
+    eexica zoned(4);
+    ecoenv zoned(1);
+    econor zoned(1);
+    eempco char(30);
+    enocob zoned(1);
+    enumpv packed(5);
+    enif zoned(1);
+    ennif char(10);
+    elibr0 char(1);
+    efcont packed(9);
+    eestci char(1);
+    elocon zoned(4);
+    elofir zoned(4);
+    elibr2 char(1);
+    efresp packed(9);
+    ereser char(1);
+    ediaf char(4);
+    efepag zoned(2);
+    enufuc packed(11);
+    elibr1 char(5);
+    exx2 zoned(3);
+    ecargo char(12);
+    enomfi char(35);
+    efalta packed(4);
+    enombe char(35);
+    edombe char(35);
+    elocbe char(35);
+    enomen char(30);
+    enimpr zoned(1);
+    eclimp char(1);
+    ecaden char(1);
+    edescu zoned(5 : 3);
+    enivel zoned(10 : 2);
+    ebolit zoned(3);
+    ecobol char(1);
+    agente char(1);
+    ecopaa char(1);
+    enoche char(1);
+    emotba char(1);
+    emante char(1);
+    efult packed(6);
+    ecault char(1);
+    efpenu packed(6);
+    ecapnl char(1);
+    eopes3 packed(8);
+    eimes3 zoned(9);
+    eopex3 packed(8);
+    eimex3 zoned(9);
+    eopes2 packed(8);
+    eimes2 zoned(9);
+    eopex2 packed(8);
+    eimex2 zoned(9);
+    eopes1 packed(8);
+    eimes1 zoned(9);
+    eopex1 packed(8);
+    eimex1 zoned(9);
+    esaldo zoned(10 : 2);
+    enombr char(32);
+    ecades char(3);
+    edopv char(32);
+    elib4 char(3);
+    elocpv char(32);
+    elib5 zoned(3);
+    enlopv zoned(4);
+    efesal zoned(6);
+    efbaja packed(6);
+    esali zoned(1);
+    ecbaja zoned(1);
+    ecmovi zoned(1);
+    etelf char(8);
+    enutal char(6);
+    esalro zoned(1);
+    epropv zoned(2);
+    esalce zoned(1);
+    edispv zoned(2);
+    enotfa zoned(5);
+    enotim zoned(5);
+    enoimp zoned(1);
+    emensa zoned(1);
+    elibr3 char(1);
+    eenvch char(1);
+    ezonab zoned(4);
+    edistb zoned(2);
+    eprob zoned(2);
+    eoprpm zoned(5);
+    eimppm zoned(9);
+    edesde char(1);
+    ehasta char(1);
+    etoest char(1);
+    ecorbe zoned(1);
+    eforpa char(1);
+    elib8 char(1);
+    enoofe char(1);
+    elib7 char(1);
+    enubco packed(5);
+    enusuc zoned(4);
+    enucc char(10);
+    edirbc char(35);
+    ezobco zoned(4);
+    eipror packed(9);
+    elibr4 char(1);
+    efpror packed(9);
+    ecpror zoned(1);
+    efealt packed(6);
+    eopdr3 packed(8);
+    eimdr3 zoned(9);
+    eopdr2 packed(8);
+    eimdr2 zoned(9);
+    eopdr1 packed(8);
+    eimdr1 zoned(9);
+    eacdis char(1);
+    enifbe zoned(1);
+    ennifb char(10);
+  end-ds;
+
+  dcl-ds dsINDEPROVTpl qualified template;
+    pnupro zoned(2);
+    pnopro char(15);
+    pprefi char(3);
+    pzona zoned(4);
+    pgrupo zoned(2);
+    pncomu char(20);
+  end-ds;
+
+  dcl-ds dsTABACTITpl qualified template;
+    tacdin zoned(2);
+    tacdes char(30);
+    tacint zoned(3);
+    tgruac zoned(1);
+    tnivpt packed(9);
+    tnivdo packed(9);
+    tdesin char(30);
+    tcondi char(1);
+    tconin char(1);
+    tnireq packed(9);
+    tnidci packed(9);
+    tintli packed(9);
+    tgvact zoned(2);
+    tacdci zoned(4);
+    tanagr zoned(2);
+    tgriso zoned(4);
+    tcapcgp char(1);
+  end-ds;  
+  dcl-ds dsSGCCURTVTpl qualified template;
+    starje zoned(8);
+    sfecalt zoned(8);
+    sfecbaj zoned(8);
+    susuari char(10);
+  end-ds;
+  dcl-ds dsSGCCURIMTpl qualified template;
+    itarje zoned(8);
+    ifecalt zoned(8);
+    ifecbaj zoned(8);
+    iusuari char(10);
+  end-ds;
+  dcl-ds dsSGCCURMCCTpl qualified template;
+    mtarje zoned(8);
+    mfecalt zoned(8);
+    mfecbaj zoned(8);
+    musuari char(10);
+  end-ds;  
+  dcl-ds dsPAISESISOLTpl qualified template;
+    c_name char(50);
+    c_codeiso char(2);
+    c_code zoned(3);
+  end-ds;  
+  dcl-ds dsSISGESOPETpl qualified template;
+    onreal zoned(8);
+    ocodsg zoned(3);
+    onagen zoned(4);
+    orefop char(50);
+    ocopdi char(1);
+    otsemi char(2);
+    oesope char(2);
+    ondesc zoned(9);
+    ofcoop zoned(8);
+    ofenop zoned(8);
+    oimpor packed(9);
+    onucru char(15);
+    obillr char(15);
+    ofecfa zoned(8);
+    ontram char(20);
+    onfimi zoned(9);
+  end-ds;
+  dcl-ds dsSISGESTARTpl qualified template;
+    tgrupo zoned(8);
+    tempre zoned(6);
+    tnreal zoned(8);
+    tnagen zoned(4);
+    tcodsg zoned(3);
+    tfalsg zoned(8);
+    tfbadi zoned(8);
+    tfbasg zoned(8);
+    tci1sg char(48);
+    ttarco char(1);
+    tclien zoned(3);
+    tnomsi char(35);
+    tlabel1 char(10);
+    tcatra char(1);
+    tcenre char(1);
+  end-ds;
   //------------------------------------------------------------------------
   // Declaraciones de Variables
   //------------------------------------------------------------------------
