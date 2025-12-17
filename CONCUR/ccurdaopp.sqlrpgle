@@ -256,12 +256,6 @@
 
         dsCCURFR200T.F200IDR = 200;
 
-        // Javier turegaono 04-02-13 (concur)
-        // Numero Tarjeta
-        //-----------------------------
-        //dsCCURFR200T.F200CCN = NSBIN + '****' + NSRES;
-        //dsCCURFR200T.F200CCN = NTAR14;
-
         dsCCURFR200T.F200CCN = NTAR10 + '9999';
 
         // Nº Referencia Operación
@@ -920,7 +914,6 @@
         Endif;
         //---------------------------------------
 
-
         //TODOREG = CCURFR200PF;  // CCURFR200   
         TODOREG = dsCCURFR200T;
         EXCEPT;
@@ -952,7 +945,9 @@
 
           dcl-s WUser char(10) inz(*user);
           Dcl-s WID_Gen zoned(10) inz(0);
+          Dcl-s WDSSISGESOPE Char(167);
 
+          WDSSISGESOPE = DSSISGESOPE;
 
           Exec Sql
             SELECT ID_F200
@@ -962,7 +957,9 @@
                   VALUES (default, 
                       :dsCCURFR200T, 
                       default,
-                      :WUser));
+                      :WUser,
+                      :WDSSISGESOPE)
+              );
 
           If Sqlcode <> 0;
             observacionSql = 'Error al grabar en la tabla CCURFR200T';

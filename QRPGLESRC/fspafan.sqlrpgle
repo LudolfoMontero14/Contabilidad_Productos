@@ -7,7 +7,6 @@
   /copy UTILITIES/QRPGLESRC,PSDSCP      // psds
   /Include UTILITIES/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
   /copy EXPLOTA/QRPGLESRC,CONTABSRVH       // Utilidades contabilidad
-  ///copy EXPLOTA/QRPGLESRC,MCARD_H
 
   Dcl-S fechaSistema Timestamp;
 
@@ -70,6 +69,7 @@
       P_NomAsiPar   Char(10);
       P_NomCabpar   Char(10);
       P_NomDetPar   Char(10);
+      P_NumApunte   Char( 6);
     end-pi;
 
     WNomAsiPar = P_NomAsiPar;
@@ -130,22 +130,14 @@
                 :WCodContab     // Indice Contable: 5 Para este proceso
                 :WApunte        // NUmero de Apunte
                 :fecproces      // Fecha del asiento DDMMAAAA
-                :WNomAsiPar    // Nombre Fichero Parcial ASIFILEn
+                :WNomAsiPar     // Nombre Fichero Parcial ASIFILEn
                 );
 
       Inserta_Totales_Evi();
 
       Grabar_Temporal_A_Detevi(dsDetevi);
       Guardar_Cabecera_Evidencia(dsDetevi);
-      CONTABSRV_Registro_Auditoria_Paralelo(
-          P_NonProc            // Proceso que Ejecuta
-          :WPGM                // Proceso Actual 'FSPAFAN'
-          :WApunte             // Numero de Apunte
-          :WNomAsiPar          // Nombre Asifilen Parcial
-          :WNomCabpar           // Nombre Cabevi Parcial
-          :WNomDetPar          // Nombre Detevi Parcial
-      );
-
+      P_NumApunte = WApunte;   // Para devolver el numero de Apunte por paramatro
     EndIf;
 
     *InLR = *On;

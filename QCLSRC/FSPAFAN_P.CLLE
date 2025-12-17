@@ -1,8 +1,7 @@
 PGM &NomProc
     dcl  &NomProc  *char  10
-    dcl  &NUMASI   *char   6
     dcl  &Numreg   *dec  (10 0) 
-
+    dcl  &NUMAPU   *char   6
 
     Call NOEXISTE
     /* Proceso que copia los ficheros Necesarios  */
@@ -32,7 +31,8 @@ PGM &NomProc
                PARM(&NomProc          +
                     'ASIPAFAN'        +
                     'CABEPAFA'        +
-                    'DETEPAFA')                 
+                    'DETEPAFA'        +
+                    &NUMAPU)                 
     /*DLTOVR FILE(ASIFILEN)*/
     /*------------------------------------------------------*/
 
@@ -57,6 +57,15 @@ PGM &NomProc
 
     ENDDO
 
+    /*-------------------------------------------------------*/
+    /* Actualiza Auditoria Paralelo                          */
+    /*-------------------------------------------------------*/
+    Call CONTAB100 Parm(&NomProc      +
+                    'ASIPAFAN'        +
+                    'CABEPAFA'        +
+                    'DETEPAFA'        +
+                    &NUMAPU           +
+                    'FSPAFAN')
     /*--------------------------------*/
     /* Fin del FSPAFAN New            */
     /*--------------------------------*/    

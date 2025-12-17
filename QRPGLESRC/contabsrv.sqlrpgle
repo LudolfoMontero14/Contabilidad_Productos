@@ -54,13 +54,18 @@
       'INSERT INTO '                                       +
       %Trim(in_NomCabpar)                                  +
       ' (CDESCR, CNUAPU, CFEALT, CFEBAJ, CNUEVI, CIDMOD) ' +
-      'VALUES('                                            +
-      %trim(in_dsCabevi.descripcion)            + ','      +
-      in_dsCabevi.numeroApunte                  + ','      +
-      %Editc(in_dsCabevi.fechaConciliacion:'X') + ','      +
-      %Editc(in_dsCabevi.fechaBaja:'X')         + ','      +
-      in_dsCabevi.numeroEvidencia               + ','      +
-      in_dsCabevi.pteModificar + ')';
+      'VALUES(?,?,?,?,?,?)';
+    // SqlStr = 
+    //   'INSERT INTO '                                       +
+    //   %Trim(in_NomCabpar)                                  +
+    //   ' (CDESCR, CNUAPU, CFEALT, CFEBAJ, CNUEVI, CIDMOD) ' +
+    //   'VALUES('                                            +
+    //   WComi + %trim(in_dsCabevi.descripcion) + WComi + ',' +
+    //   WComi + in_dsCabevi.numeroApunte       + WComi + ', '+
+    //   %Editc(in_dsCabevi.fechaConciliacion:'X')      + ', '+
+    //   %char(in_dsCabevi.fechaBaja)                   + ',' +
+    //   WComi + in_dsCabevi.numeroEvidencia    + WComi + ',' +
+    //   WComi + in_dsCabevi.pteModificar + WComi + ')';
 
     // Exec Sql
     //   INSERT INTO FICHEROS.CABEVI (CDESCR,
@@ -76,8 +81,17 @@
     //                        :in_dsCabevi.numeroEvidencia,
     //                        :in_dsCabevi.pteModificar);
 
-    Exec Sql
-        Execute Immediate :SqlStr;
+    // Exec Sql
+    //     Execute Immediate :SqlStr;
+    exec sql prepare SZ from :SqlStr;
+    exec sql execute SZ using 
+        :in_dsCabevi.descripcion,
+        :in_dsCabevi.numeroApunte,
+        :in_dsCabevi.fechaConciliacion,
+        :in_dsCabevi.fechaBaja,
+        :in_dsCabevi.numeroEvidencia,
+        :in_dsCabevi.pteModificar;
+
 
     If sqlStt <> '00000';
       out_sqlError = sqlStt;
@@ -831,7 +845,7 @@
         FILE_REQUERIDO, FILE_TYPE, FILE_LIB_ORIGEN, SI_DATA 
       From PARALELOC.PARALELO_COFIG_PROCESS
       Where
-        ID_PROCESO = 'FSPAFAN'
+        ID_PROCESO = :P_NomProc
         And ESTATUS = 'A';
 
     Exec Sql Open  C_Fic_Copy;

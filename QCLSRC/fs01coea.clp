@@ -1398,7 +1398,16 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
              CALL       PGM(MSGGUARDCL) PARM(&DESCTOT &CODRET)
              GOTO       CMDLBL(VERECI)
              ENDDO
-/*---*/
+     /*--------------------------------------------------------*/
+     /*    Nueva version del CEREFS (CEREFSN)             LM   */
+     /*    PARALELO - Contabilidad por Producto                */
+     /*--------------------------------------------------------*/
+
+             SBMJOB     CMD(CALL PGM(PARALELOC/CEREFSN_P) + 
+                        PARM(('FS01COEA'))) +
+                        JOB(CEREFSN_P) INLLIBL(PARALELOC EXPLOTA)
+
+     /*--------------------------------------------------------*/
              CHGVAR     VAR(&TEX) VALUE('FS01CO, ANTES DE PGM-CEREFS')
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(BORECI FICHEROS +
                           BORECI LIBSEG30D C ' ' ' ' &TEX FS01CO)
@@ -1450,7 +1459,6 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
 /*------------------------------------------------------------------*/
 
              CALL       PGM(EXPLOTA/CEREFS) /* Acumular Recibos */
-
 
 /*---*/
              CALL       PGM(EXPLOTA/TRACE) PARM('cuadre BORECI  CON +
@@ -2019,7 +2027,8 @@ RE54:        CHGVAR     VAR(&TEX) VALUE('FS01CO, DESPUES DEL +
      /*    PARALELO                                            */
      /*--------------------------------------------------------*/
 
-             SBMJOB     CMD(CALL PGM(FSPAFAN_P) PARM(('FS01COEA'))) +
+             SBMJOB     CMD(CALL PGM(Paraleloc/FSPAFAN_P) + 
+                        PARM(('FS01COEA'))) +
                           JOB(FSPAFAN_P) INLLIBL(PARALELOC EXPLOTA)
 
      /*--------------------------------------------------------*/

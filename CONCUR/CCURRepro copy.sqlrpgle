@@ -1753,16 +1753,22 @@
     // ====================================================================
     // GRABAR: CCURFR304PF  SEGMENTO-3                                    
     // ====================================================================
-    IF dsLINAEREA.RACOALCO3 <> ' ' AND 
-		   dsLINAEREA.RACOALCO3 <> '00';
+    IF RA_COALCO3 <> ' ' AND RA_COALCO3 <> '00';
 
       //CLEAR CCURFR304PF;
       Reset dsCCURFR304T;
       dsCCURFR304T.F304IDR = 304;
       dsCCURFR304T.F304TRN = 
         %EDITC(*DATE:'X') + 
-        %EDITC(WNUMREAL:'X') + 
-        dsTRANSAC.GENUTRAN;
+        %EDITC(SOCIO:'X') + 
+        %EDITC(NUDES:'X');
+
+      IF PA_BAGEN = 'B';
+        dsCCURFR304T.F304TRN = 
+          %EDITC(*DATE:'X') + 
+          %EDITC(SOCIO:'X') + 
+          TRANMIN;
+      ENDIF;
 
       // Nº.DEL SEGMENTO
       //----------------------------------------
@@ -1770,64 +1776,57 @@
 
       // CODIGO ABREVIADO LLAA
       //----------------------------------------
-      dsCCURFR304T.F304CCO = dsLINAEREA.RACOALCO3;
+      dsCCURFR304T.F304CCO = RA_COALCO3;
 
       // CLASE O CODIGO SERVICIO
       //----------------------------------------
-      dsCCURFR304T.F304CSC = dsLINAEREA.RACLASER3;
+      dsCCURFR304T.F304CSC = RA_CLASER3;
 
       // SALIDA: LOCALIDAD/PAIS/FECHA/IND.SAL.EX
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES2; 
+      CHAIN (RA_AERDES2)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304DLO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304DCO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304DLO = XCIUDA;
+        dsCCURFR304T.F304DCO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304DDA = dsLINAEREA.RAFLLEGA2;
+      dsCCURFR304T.F304DDA = RA_FLLEGA2;
 
       // LLEGADA: LOCALIDAD/PAIS/FECHA/IND.LLE.
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES3; 
+      CHAIN (RA_AERDES3)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304ALO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304ACO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304ALO = XCIUDA;
+        dsCCURFR304T.F304ACO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304ADA = dsLINAEREA.RAFLLEGA3;
+      dsCCURFR304T.F304ADA = RA_FLLEGA3;
 
       // NUMERO DE VUELO
       //----------------------------------------
-      dsCCURFR304T.F304FNU = %EDITC(dsLINAEREA.RANUVUEL3:'X');
+      dsCCURFR304T.F304FNU = %EDITC(RA_NUVUEL3:'X');
 
       // INDICADOR SEGMENTO (ORIGEN/FINAL)
       //----------------------------------------
       dsCCURFR304T.F304OFL = '0'; // NO ORIGEN
 
-      IF dsLINAEREA.RAAERDES4 <> ' ' AND 
-			   dsLINAEREA.RAAERDES4 <> '000';
+      IF RA_AERDES4 <> ' ' AND RA_AERDES4 <> '000';
         dsCCURFR304T.F304DFL = '0'; // NO FINAL
       ELSE;
         dsCCURFR304T.F304DFL = '1'; // SI FINAL
@@ -1844,40 +1843,50 @@
 
       // NUMERO BILLETE CAMBIADO
       //----------------------------------------
-      IF dsLINAEREA.RATIPDOC <> '1';
+      IF RA_TIPDOC <> '1';
         dsCCURFR304T.F304ETN = %TRIM(dsTRANSAC.GENUMDOC);
       ENDIF;
 
       // Referencias (1-5)
       //----------------------------------------
-      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF01;
-      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF02;
-      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF03;
-      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF04;
-      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF05;
+      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF1;
+      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF2;
+      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF3;
+      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF4;
+      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF5;
 
       // Reservado (Libre)
       //----------------------------------------
       dsCCURFR304T.F304LIB = *BLANKS;
 
+      //TODOREG = CCURFR304PF;  // CCURFR304   
+      TODOREG = dsCCURFR304T;  // CCURFR304   
+      EXCEPT;
+
       // Graba registro en el historico CCURFR303T
       //------------------------------------------
-      Graba_Reg_FR304();
+        PARAM_IDH2 = Graba_Reg_FR304(PARAM_IDP);
 
     ENDIF;
     // ====================================================================
     // GRABAR: CCURFR304PF  SEGMENTO-4                                    
     // ====================================================================
-    IF dsLINAEREA.RACOALCO4 <> ' ' AND 
-		   dsLINAEREA.RACOALCO4 <> '00';
+    IF RA_COALCO4 <> ' ' AND RA_COALCO4 <> '00';
 
       //CLEAR CCURFR304PF;
       Reset dsCCURFR304T;
       dsCCURFR304T.F304IDR = 304;
       dsCCURFR304T.F304TRN = 
         %EDITC(*DATE:'X') + 
-        %EDITC(WNUMREAL:'X') + 
-        dsTRANSAC.GENUTRAN;
+        %EDITC(SOCIO:'X') + 
+        %EDITC(NUDES:'X');
+
+      IF PA_BAGEN = 'B';
+        dsCCURFR304T.F304TRN = 
+          %EDITC(*DATE:'X') + 
+          %EDITC(SOCIO:'X') + 
+          TRANMIN;
+      ENDIF;
 
       // Nº.DEL SEGMENTO
       //----------------------------------------
@@ -1885,63 +1894,57 @@
 
       // CODIGO ABREVIADO LLAA
       //----------------------------------------
-      dsCCURFR304T.F304CCO = dsLINAEREA.RACOALCO4;
+      dsCCURFR304T.F304CCO = RA_COALCO4;
 
       // CLASE O CODIGO SERVICIO
       //----------------------------------------
-      dsCCURFR304T.F304CSC = dsLINAEREA.RACLASER4;
+      dsCCURFR304T.F304CSC = RA_CLASER4;
 
       // SALIDA: LOCALIDAD/PAIS/FECHA/IND.SAL.EX
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES3; 
+      CHAIN (RA_AERDES3)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304DLO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304DCO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304DLO = XCIUDA;
+        dsCCURFR304T.F304DCO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304DDA = dsLINAEREA.RAFLLEGA3;
+      dsCCURFR304T.F304DDA = RA_FLLEGA3;
 
       // LLEGADA: LOCALIDAD/PAIS/FECHA/IND.LLE.
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES4; 
+      CHAIN (RA_AERDES4)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304ALO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304ACO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304ALO = XCIUDA;
+        dsCCURFR304T.F304ACO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304ADA = dsLINAEREA.RAFLLEGA4;
+      dsCCURFR304T.F304ADA = RA_FLLEGA4;
 
       // NUMERO DE VUELO
       //----------------------------------------
-      dsCCURFR304T.F304FNU = %EDITC(dsLINAEREA.RANUVUEL4:'X');
+      dsCCURFR304T.F304FNU = %EDITC(RA_NUVUEL4:'X');
 
       // INDICADOR SEGMENTO (ORIGEN/FINAL)
       //----------------------------------------
       dsCCURFR304T.F304OFL = '0'; // NO ORIGEN
 
-      IF dsLINAEREA.RAAERDES5 <> ' ' AND dsLINAEREA.RAAERDES5 <> '000';
+      IF RA_AERDES5 <> ' ' AND RA_AERDES5 <> '000';
         dsCCURFR304T.F304DFL = '0'; // NO FINAL
       ELSE;
         dsCCURFR304T.F304DFL = '1'; // SI FINAL
@@ -1958,39 +1961,50 @@
 
       // NUMERO BILLETE CAMBIADO
       //----------------------------------------
-      IF dsLINAEREA.RATIPDOC <> '1';
+      IF RA_TIPDOC <> '1';
         dsCCURFR304T.F304ETN = %TRIM(dsTRANSAC.GENUMDOC);
       ENDIF;
 
       // Referencias (1-5)
       //----------------------------------------
-      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF01;
-      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF02;
-      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF03;
-      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF04;
-      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF05;
+      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF1;
+      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF2;
+      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF3;
+      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF4;
+      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF5;
 
       // Reservado (Libre)
       //----------------------------------------
       dsCCURFR304T.F304LIB = *BLANKS;
 
+      //TODOREG = CCURFR304PF;  // CCURFR304   
+      TODOREG = dsCCURFR304T;  // CCURFR304   
+      EXCEPT;
+
       // Graba registro en el historico CCURFR304T
       //------------------------------------------
-        Graba_Reg_FR304();
+        PARAM_IDH2 = Graba_Reg_FR304(PARAM_IDP);
     ENDIF;
 
     // ====================================================================
     // GRABAR: CCURFR304PF  SEGMENTO-5                                    
     // ====================================================================
-    IF dsLINAEREA.RACOALCO5 <> ' ' AND 
-		   dsLINAEREA.RACOALCO5 <> '00';
+    IF RA_COALCO5 <> ' ' AND RA_COALCO5 <> '00';
 
+      //CLEAR CCURFR304PF;
       Reset dsCCURFR304T;
       dsCCURFR304T.F304IDR = 304;
       dsCCURFR304T.F304TRN = 
         %EDITC(*DATE:'X') + 
-        %EDITC(WNUMREAL:'X') + 
-        dsTRANSAC.GENUTRAN;
+        %EDITC(SOCIO:'X') + 
+        %EDITC(NUDES:'X');
+
+      IF PA_BAGEN = 'B';
+        dsCCURFR304T.F304TRN = 
+          %EDITC(*DATE:'X') + 
+          %EDITC(SOCIO:'X') + 
+          TRANMIN;
+      ENDIF;
 
       // Nº.DEL SEGMENTO
       //----------------------------------------
@@ -1998,63 +2012,57 @@
 
       // CODIGO ABREVIADO LLAA
       //----------------------------------------
-      dsCCURFR304T.F304CCO = dsLINAEREA.RACOALCO5;
+      dsCCURFR304T.F304CCO = RA_COALCO5;
 
       // CLASE O CODIGO SERVICIO
       //----------------------------------------
-      dsCCURFR304T.F304CSC = dsLINAEREA.RACLASER5;
+      dsCCURFR304T.F304CSC = RA_CLASER5;
 
       // SALIDA: LOCALIDAD/PAIS/FECHA/IND.SAL.EX
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES4; 
+      CHAIN (RA_AERDES4)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304DLO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304DCO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304DLO = XCIUDA;
+        dsCCURFR304T.F304DCO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304DDA = dsLINAEREA.RAFLLEGA4;
+      dsCCURFR304T.F304DDA = RA_FLLEGA4;
 
       // LLEGADA: LOCALIDAD/PAIS/FECHA/IND.LLE.
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES5; 
+      CHAIN (RA_AERDES5)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304ALO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304ACO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304ALO = XCIUDA;
+        dsCCURFR304T.F304ACO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304ADA = dsLINAEREA.RAFLLEGA5;
+      dsCCURFR304T.F304ADA = RA_FLLEGA5;
 
       // NUMERO DE VUELO
       //----------------------------------------
-      dsCCURFR304T.F304FNU = %EDITC(dsLINAEREA.RANUVUEL5:'X');
+      dsCCURFR304T.F304FNU = %EDITC(RA_NUVUEL5:'X');
 
       // INDICADOR SEGMENTO (ORIGEN/FINAL)
       //----------------------------------------
       dsCCURFR304T.F304OFL = '0'; // NO ORIGEN
 
-      IF dsLINAEREA.RAAERDES6 <> ' ' AND dsLINAEREA.RAAERDES6 <> '000';
+      IF RA_AERDES6 <> ' ' AND RA_AERDES6 <> '000';
         dsCCURFR304T.F304DFL = '0'; // NO FINAL
       ELSE;
         dsCCURFR304T.F304DFL = '1'; // SI FINAL
@@ -2071,40 +2079,50 @@
 
       // NUMERO BILLETE CAMBIADO
       //----------------------------------------
-      IF dsLINAEREA.RATIPDOC <> '1';
+      IF RA_TIPDOC <> '1';
         dsCCURFR304T.F304ETN = %TRIM(dsTRANSAC.GENUMDOC);
       ENDIF;
 
       // Referencias (1-5)
       //----------------------------------------
-      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF01;
-      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF02;
-      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF03;
-      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF04;
-      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF05;
+      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF1;
+      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF2;
+      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF3;
+      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF4;
+      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF5;
 
       // Reservado (Libre)
       //----------------------------------------
       dsCCURFR304T.F304LIB = *BLANKS;
 
+      //TODOREG = CCURFR304PF;  // CCURFR304   
+      TODOREG = dsCCURFR304T;  // CCURFR304   
+      EXCEPT;
+
       // Graba registro en el historico CCURFR304T
       //------------------------------------------
-      Graba_Reg_FR304();
+        PARAM_IDH2 = Graba_Reg_FR304(PARAM_IDP);
     ENDIF;
 
     // ====================================================================
     // GRABAR: CCURFR304PF  SEGMENTO-6                                    
     // ====================================================================
-    IF dsLINAEREA.RACOALCO6 <> ' ' AND 
-		   dsLINAEREA.RACOALCO6 <> '00';
+    IF RA_COALCO6 <> ' ' AND RA_COALCO6 <> '00';
 
       //CLEAR CCURFR304PF;
       Reset dsCCURFR304T;
       dsCCURFR304T.F304IDR = 304;
       dsCCURFR304T.F304TRN = 
         %EDITC(*DATE:'X') + 
-        %EDITC(WNUMREAL:'X') + 
-        dsTRANSAC.GENUTRAN;
+        %EDITC(SOCIO:'X') + 
+        %EDITC(NUDES:'X');
+
+      IF PA_BAGEN = 'B';
+        dsCCURFR304T.F304TRN = 
+          %EDITC(*DATE:'X') + 
+          %EDITC(SOCIO:'X') + 
+          TRANMIN;
+      ENDIF;
 
       // Nº.DEL SEGMENTO
       //----------------------------------------
@@ -2112,63 +2130,57 @@
 
       // CODIGO ABREVIADO LLAA
       //----------------------------------------
-      dsCCURFR304T.F304CCO = dsLINAEREA.RACOALCO6;
+      dsCCURFR304T.F304CCO = RA_COALCO6;
 
       // CLASE O CODIGO SERVICIO
       //----------------------------------------
-      dsCCURFR304T.F304CSC = dsLINAEREA.RACLASER6;
+      dsCCURFR304T.F304CSC = RA_CLASER6;
 
       // SALIDA: LOCALIDAD/PAIS/FECHA/IND.SAL.EX
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES5; 
+      CHAIN (RA_AERDES5)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304DLO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304DCO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304DLO = XCIUDA;
+        dsCCURFR304T.F304DCO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304DDA = dsLINAEREA.RAFLLEGA5;
+      dsCCURFR304T.F304DDA = RA_FLLEGA5;
 
       // LLEGADA: LOCALIDAD/PAIS/FECHA/IND.LLE.
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES6; 
+      CHAIN (RA_AERDES6)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304ALO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304ACO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304ALO = XCIUDA;
+        dsCCURFR304T.F304ACO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304ADA = dsLINAEREA.RAFLLEGA6;
+      dsCCURFR304T.F304ADA = RA_FLLEGA6;
 
       // NUMERO DE VUELO
       //----------------------------------------
-      dsCCURFR304T.F304FNU = %EDITC(dsLINAEREA.RANUVUEL6:'X');
+      dsCCURFR304T.F304FNU = %EDITC(RA_NUVUEL6:'X');
 
       // INDICADOR SEGMENTO (ORIGEN/FINAL)
       //----------------------------------------
       dsCCURFR304T.F304OFL = '0'; // NO ORIGEN
 
-      IF dsLINAEREA.RAAERDES7 <> ' ' AND dsLINAEREA.RAAERDES7 <> '000';
+      IF RA_AERDES7 <> ' ' AND RA_AERDES7 <> '000';
         dsCCURFR304T.F304DFL = '0'; // NO FINAL
       ELSE;
         dsCCURFR304T.F304DFL = '1'; // SI FINAL
@@ -2185,39 +2197,50 @@
 
       // NUMERO BILLETE CAMBIADO
       //----------------------------------------
-      IF dsLINAEREA.RATIPDOC <> '1';
+      IF RA_TIPDOC <> '1';
         dsCCURFR304T.F304ETN = %TRIM(dsTRANSAC.GENUMDOC);
       ENDIF;
 
       // Referencias (1-5)
       //----------------------------------------
-      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF01;
-      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF02;
-      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF03;
-      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF04;
-      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF05;
+      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF1;
+      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF2;
+      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF3;
+      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF4;
+      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF5;
 
       // Reservado (Libre)
       //----------------------------------------
       dsCCURFR304T.F304LIB = *BLANKS;
 
+      //TODOREG = CCURFR304PF;  // CCURFR304   
+      TODOREG = dsCCURFR304T;  // CCURFR304   
+      EXCEPT;
+
       // Graba registro en el historico CCURFR304T
       //------------------------------------------
-      Graba_Reg_FR304();
+        PARAM_IDH2 = Graba_Reg_FR304(PARAM_IDP);
     ENDIF;
 
     // ====================================================================
     // GRABAR: CCURFR304PF  SEGMENTO-7                                    
     // ====================================================================
-    IF dsLINAEREA.RACOALCO7 <> ' ' AND 
-		   dsLINAEREA.RACOALCO7 <> '00';
+    IF RA_COALCO7 <> ' ' AND RA_COALCO7 <> '00';
 
+      //CLEAR CCURFR304PF;
       Reset dsCCURFR304T;
       dsCCURFR304T.F304IDR = 304;
       dsCCURFR304T.F304TRN = 
         %EDITC(*DATE:'X') + 
-        %EDITC(WNUMREAL:'X') + 
-        dsTRANSAC.GENUTRAN;
+        %EDITC(SOCIO:'X') + 
+        %EDITC(NUDES:'X');
+
+      IF PA_BAGEN = 'B';
+        dsCCURFR304T.F304TRN = 
+          %EDITC(*DATE:'X') + 
+          %EDITC(SOCIO:'X') + 
+          TRANMIN;
+      ENDIF;
 
       // Nº.DEL SEGMENTO
       //----------------------------------------
@@ -2225,63 +2248,57 @@
 
       // CODIGO ABREVIADO LLAA
       //----------------------------------------
-      dsCCURFR304T.F304CCO = dsLINAEREA.RACOALCO7;
+      dsCCURFR304T.F304CCO = RA_COALCO7;
 
       // CLASE O CODIGO SERVICIO
       //----------------------------------------
-      dsCCURFR304T.F304CSC = dsLINAEREA.RACLASER7;
+      dsCCURFR304T.F304CSC = RA_CLASER7;
 
       // SALIDA: LOCALIDAD/PAIS/FECHA/IND.SAL.EX
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES6; 
+      CHAIN (RA_AERDES6)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304DLO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304DCO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304DLO = XCIUDA;
+        dsCCURFR304T.F304DCO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304DDA = dsLINAEREA.RAFLLEGA6;
+      dsCCURFR304T.F304DDA = RA_FLLEGA6;
 
       // LLEGADA: LOCALIDAD/PAIS/FECHA/IND.LLE.
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES7; 
+      CHAIN (RA_AERDES7)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304ALO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304ACO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304ALO = XCIUDA;
+        dsCCURFR304T.F304ACO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304ADA = dsLINAEREA.RAFLLEGA7;
+      dsCCURFR304T.F304ADA = RA_FLLEGA7;
 
       // NUMERO DE VUELO
       //----------------------------------------
-      dsCCURFR304T.F304FNU = %EDITC(dsLINAEREA.RANUVUEL7:'X');
+      dsCCURFR304T.F304FNU = %EDITC(RA_NUVUEL7:'X');
 
       // INDICADOR SEGMENTO (ORIGEN/FINAL)
       //----------------------------------------
       dsCCURFR304T.F304OFL = '0'; // NO ORIGEN
 
-      IF dsLINAEREA.RAAERDES8 <> ' ' AND dsLINAEREA.RAAERDES8 <> '000';
+      IF RA_AERDES8 <> ' ' AND RA_AERDES8 <> '000';
         dsCCURFR304T.F304DFL = '0'; // NO FINAL
       ELSE;
         dsCCURFR304T.F304DFL = '1'; // SI FINAL
@@ -2298,40 +2315,50 @@
 
       // NUMERO BILLETE CAMBIADO
       //----------------------------------------
-      IF dsLINAEREA.RATIPDOC <> '1';
+      IF RA_TIPDOC <> '1';
         dsCCURFR304T.F304ETN = %TRIM(dsTRANSAC.GENUMDOC);
       ENDIF;
 
       // Referencias (1-5)
       //----------------------------------------
-      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF01;
-      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF02;
-      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF03;
-      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF04;
-      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF05;
+      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF1;
+      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF2;
+      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF3;
+      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF4;
+      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF5;
 
       // Reservado (Libre)
       //----------------------------------------
       dsCCURFR304T.F304LIB = *BLANKS;
 
+      //TODOREG = CCURFR304PF;  // CCURFR304   
+      TODOREG = dsCCURFR304T;  // CCURFR304   
+      EXCEPT;
+
       // Graba registro en el historico CCURFR304T
       //------------------------------------------
-      Graba_Reg_FR304();
+        PARAM_IDH2 = Graba_Reg_FR304(PARAM_IDP);
     ENDIF;
 
     // ====================================================================
     // GRABAR: CCURFR304PF  SEGMENTO-8                                    
     // ====================================================================
-    IF dsLINAEREA.RACOALCO8 <> ' ' AND 
-		   dsLINAEREA.RACOALCO8 <> '00';
+    IF RA_COALCO8 <> ' ' AND RA_COALCO8 <> '00';
 
       //CLEAR CCURFR304PF;
       Reset dsCCURFR304T;
       dsCCURFR304T.F304IDR = 304;
       dsCCURFR304T.F304TRN = 
         %EDITC(*DATE:'X') + 
-        %EDITC(WNUMREAL:'X') + 
-        dsTRANSAC.GENUTRAN;
+        %EDITC(SOCIO:'X') + 
+        %EDITC(NUDES:'X');
+
+      IF PA_BAGEN = 'B';
+      dsCCURFR304T.F304TRN = 
+        %EDITC(*DATE:'X') + 
+        %EDITC(SOCIO:'X') + 
+        TRANMIN;
+      ENDIF;
 
       // Nº.DEL SEGMENTO
       //----------------------------------------
@@ -2339,63 +2366,57 @@
 
       // CODIGO ABREVIADO LLAA
       //----------------------------------------
-      dsCCURFR304T.F304CCO = dsLINAEREA.RACOALCO8;
+      dsCCURFR304T.F304CCO = RA_COALCO8;
 
       // CLASE O CODIGO SERVICIO
       //----------------------------------------
-      dsCCURFR304T.F304CSC = dsLINAEREA.RACLASER8;
+      dsCCURFR304T.F304CSC = RA_CLASER8;
 
       // SALIDA: LOCALIDAD/PAIS/FECHA/IND.SAL.EX
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES7; 
+      CHAIN (RA_AERDES7)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304DLO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304DCO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304DLO = XCIUDA;
+        dsCCURFR304T.F304DCO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304DDA = dsLINAEREA.RAFLLEGA7;
+      dsCCURFR304T.F304DDA = RA_FLLEGA7;
 
       // LLEGADA: LOCALIDAD/PAIS/FECHA/IND.LLE.
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES8; 
+      CHAIN (RA_AERDES8)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304ALO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304ACO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304ALO = XCIUDA;
+        dsCCURFR304T.F304ACO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304ADA = dsLINAEREA.RAFLLEGA8;
+      dsCCURFR304T.F304ADA = RA_FLLEGA8;
 
       // NUMERO DE VUELO
       //----------------------------------------
-      dsCCURFR304T.F304FNU = %EDITC(dsLINAEREA.RANUVUEL8:'X');
+      dsCCURFR304T.F304FNU = %EDITC(RA_NUVUEL8:'X');
 
       // INDICADOR SEGMENTO (ORIGEN/FINAL)
       //----------------------------------------
       dsCCURFR304T.F304OFL = '0'; // NO ORIGEN
 
-      IF dsLINAEREA.RAAERDES9 <> ' ' AND dsLINAEREA.RAAERDES9 <> '000';
+      IF RA_AERDES9 <> ' ' AND RA_AERDES9 <> '000';
         dsCCURFR304T.F304DFL = '0'; // NO FINAL
       ELSE;
         dsCCURFR304T.F304DFL = '1'; // SI FINAL
@@ -2412,40 +2433,50 @@
 
       // NUMERO BILLETE CAMBIADO
       //----------------------------------------
-      IF dsLINAEREA.RATIPDOC <> '1';
+      IF RA_TIPDOC <> '1';
         dsCCURFR304T.F304ETN = %TRIM(dsTRANSAC.GENUMDOC);
       ENDIF;
 
       // Referencias (1-5)
       //----------------------------------------
-      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF01;
-      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF02;
-      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF03;
-      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF04;
-      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF05;
+      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF1;
+      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF2;
+      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF3;
+      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF4;
+      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF5;
 
       // Reservado (Libre)
       //----------------------------------------
       dsCCURFR304T.F304LIB = *BLANKS;
 
+      //TODOREG = CCURFR304PF;  // CCURFR304   
+      TODOREG = dsCCURFR304T;  // CCURFR304   
+      EXCEPT;
+
       // Graba registro en el historico CCURFR304T
       //------------------------------------------
-      Graba_Reg_FR304();
+        PARAM_IDH2 = Graba_Reg_FR304(PARAM_IDP);
     ENDIF;
 
     // ====================================================================
     // GRABAR: CCURFR304PF  SEGMENTO-9                                    
     // ====================================================================
-    IF dsLINAEREA.RACOALCO9 <> ' ' AND 
-		   dsLINAEREA.RACOALCO9 <> '00';
+    IF RA_COALCO9 <> ' ' AND RA_COALCO9 <> '00';
 
       //CLEAR CCURFR304PF;
       reset dsCCURFR304T;
       dsCCURFR304T.F304IDR = 304;
       dsCCURFR304T.F304TRN = 
         %EDITC(*DATE:'X') + 
-        %EDITC(WNUMREAL:'X') + 
-        dsTRANSAC.GENUTRAN;
+        %EDITC(SOCIO:'X') + 
+        %EDITC(NUDES:'X');
+
+      IF PA_BAGEN = 'B';
+        dsCCURFR304T.F304TRN = 
+          %EDITC(*DATE:'X') + 
+          %EDITC(SOCIO:'X') + 
+          TRANMIN;
+      ENDIF;
 
       // Nº.DEL SEGMENTO
       //----------------------------------------
@@ -2453,63 +2484,57 @@
 
       // CODIGO ABREVIADO LLAA
       //----------------------------------------
-      dsCCURFR304T.F304CCO = dsLINAEREA.RACOALCO9;
+      dsCCURFR304T.F304CCO = RA_COALCO9;
 
       // CLASE O CODIGO SERVICIO
       //----------------------------------------
-      dsCCURFR304T.F304CSC = dsLINAEREA.RACLASER9;
+      dsCCURFR304T.F304CSC = RA_CLASER9;
 
       // SALIDA: LOCALIDAD/PAIS/FECHA/IND.SAL.EX
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES8; 
+      CHAIN (RA_AERDES8)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304DLO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304DCO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304DLO = XCIUDA;
+        dsCCURFR304T.F304DCO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304DDA = dsLINAEREA.RAFLLEGA8;
+      dsCCURFR304T.F304DDA = RA_FLLEGA8;
 
       // LLEGADA: LOCALIDAD/PAIS/FECHA/IND.LLE.
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES9; 
+      CHAIN (RA_AERDES9)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304ALO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304ACO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304ALO = XCIUDA;
+        dsCCURFR304T.F304ACO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304ADA = dsLINAEREA.RAFLLEGA9;
+      dsCCURFR304T.F304ADA = RA_FLLEGA9;
 
       // NUMERO DE VUELO
       //----------------------------------------
-      dsCCURFR304T.F304FNU = %EDITC(dsLINAEREA.RANUVUEL9:'X');
+      dsCCURFR304T.F304FNU = %EDITC(RA_NUVUEL9:'X');
 
       // INDICADOR SEGMENTO (ORIGEN/FINAL)
       //----------------------------------------
       dsCCURFR304T.F304OFL = '0'; // NO ORIGEN
 
-      IF dsLINAEREA.RAAERDES10 <> ' ' AND dsLINAEREA.RAAERDES10 <> '000';
+      IF RA_AERDES10 <> ' ' AND RA_AERDES10 <> '000';
         dsCCURFR304T.F304DFL = '0'; // NO FINAL
       ELSE;
         dsCCURFR304T.F304DFL = '1'; // SI FINAL
@@ -2526,40 +2551,50 @@
 
       // NUMERO BILLETE CAMBIADO
       //----------------------------------------
-      IF dsLINAEREA.RATIPDOC <> '1';
+      IF RA_TIPDOC <> '1';
         dsCCURFR304T.F304ETN = %TRIM(dsTRANSAC.GENUMDOC);
       ENDIF;
 
       // Referencias (1-5)
       //----------------------------------------
-      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF01;
-      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF02;
-      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF03;
-      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF04;
-      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF05;
+      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF1;
+      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF2;
+      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF3;
+      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF4;
+      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF5;
 
       // Reservado (Libre)
       //----------------------------------------
       dsCCURFR304T.F304LIB = *BLANKS;
 
+      //TODOREG = CCURFR304PF;  // CCURFR304   
+      TODOREG = dsCCURFR304T;  // CCURFR304   
+      EXCEPT;
+
       // Graba registro en el historico CCURFR304T
       //------------------------------------------
-      Graba_Reg_FR304();
+        PARAM_IDH2 = Graba_Reg_FR304(PARAM_IDP);
     ENDIF;
 
     // ====================================================================
     // GRABAR: CCURFR304PF  SEGMENTO-10                                   
     // ====================================================================
-    IF dsLINAEREA.RACOALCO10 <> ' ' AND 
-		   dsLINAEREA.RACOALCO10 <> '00';
+    IF RA_COALCO10 <> ' ' AND RA_COALCO10 <> '00';
 
       //CLEAR CCURFR304PF;
       Reset dsCCURFR304T;
       dsCCURFR304T.F304IDR = 304;
       dsCCURFR304T.F304TRN = 
         %EDITC(*DATE:'X') + 
-        %EDITC(WNUMREAL:'X') + 
-        dsTRANSAC.GENUTRAN;
+        %EDITC(SOCIO:'X') + 
+        %EDITC(NUDES:'X');
+
+      IF PA_BAGEN = 'B';
+        dsCCURFR304T.F304TRN = 
+          %EDITC(*DATE:'X') + 
+          %EDITC(SOCIO:'X') + 
+          TRANMIN;
+      ENDIF;
 
       // Nº.DEL SEGMENTO
       //----------------------------------------
@@ -2567,63 +2602,57 @@
 
       // CODIGO ABREVIADO LLAA
       //----------------------------------------
-      dsCCURFR304T.F304CCO = dsLINAEREA.RACOALCO10;
+      dsCCURFR304T.F304CCO = RA_COALCO10;
 
       // CLASE O CODIGO SERVICIO
       //----------------------------------------
-      dsCCURFR304T.F304CSC = dsLINAEREA.RACLASER10;
+      dsCCURFR304T.F304CSC = RA_CLASER10;
 
       // SALIDA: LOCALIDAD/PAIS/FECHA/IND.SAL.EX
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES9; 
+      CHAIN (RA_AERDES9)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304DLO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304DCO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304DLO = XCIUDA;
+        dsCCURFR304T.F304DCO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304DDA = dsLINAEREA.RAFLLEGA9;
+      dsCCURFR304T.F304DDA = RA_FLLEGA9;
 
       // LLEGADA: LOCALIDAD/PAIS/FECHA/IND.LLE.
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES10; 
+      CHAIN (RA_AERDES10)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304ALO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304ACO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304ALO = XCIUDA;
+        dsCCURFR304T.F304ACO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304ADA = dsLINAEREA.RAFLLEGA10;
+      dsCCURFR304T.F304ADA = RA_FLLEGA10;
 
       // NUMERO DE VUELO
       //----------------------------------------
-      dsCCURFR304T.F304FNU = %EDITC(dsLINAEREA.RANUVUEL10:'X');
+      dsCCURFR304T.F304FNU = %EDITC(RA_NUVUEL10:'X');
 
       // INDICADOR SEGMENTO (ORIGEN/FINAL)
       //----------------------------------------
       dsCCURFR304T.F304OFL = '0'; // NO ORIGEN
 
-      IF dsLINAEREA.RAAERDES11 <> ' ' AND dsLINAEREA.RAAERDES11 <> '000';
+      IF RA_AERDES11 <> ' ' AND RA_AERDES11 <> '000';
         dsCCURFR304T.F304DFL = '0'; // NO FINAL
       ELSE;
         dsCCURFR304T.F304DFL = '1'; // SI FINAL
@@ -2640,40 +2669,50 @@
 
       // NUMERO BILLETE CAMBIADO
       //----------------------------------------
-      IF dsLINAEREA.RATIPDOC <> '1';
+      IF RA_TIPDOC <> '1';
         dsCCURFR304T.F304ETN = %TRIM(dsTRANSAC.GENUMDOC);
       ENDIF;
 
       // Referencias (1-5)
       //----------------------------------------
-      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF01;
-      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF02;
-      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF03;
-      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF04;
-      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF05;
+      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF1;
+      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF2;
+      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF3;
+      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF4;
+      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF5;
 
       // Reservado (Libre)
       //----------------------------------------
       dsCCURFR304T.F304LIB = *BLANKS;
 
+      //TODOREG = CCURFR304PF;  // CCURFR304   
+      TODOREG = dsCCURFR304T;  // CCURFR304   
+      EXCEPT;
+
       // Graba registro en el historico CCURFR304T
       //------------------------------------------
-      Graba_Reg_FR304();
+        PARAM_IDH2 = Graba_Reg_FR304(PARAM_IDP);
     ENDIF;
 
     // ====================================================================
     // GRABAR: CCURFR304PF  SEGMENTO-11                                   
     // ====================================================================
-    IF dsLINAEREA.RACOALCO11 <> ' ' AND 
-		   dsLINAEREA.RACOALCO11 <> '00';
+    IF RA_COALCO11 <> ' ' AND RA_COALCO11 <> '00';
 
       //CLEAR CCURFR304PF;
       Reset dsCCURFR304T;
       dsCCURFR304T.F304IDR = 304;
       dsCCURFR304T.F304TRN = 
         %EDITC(*DATE:'X') + 
-        %EDITC(WNUMREAL:'X') + 
-        dsTRANSAC.GENUTRAN;
+        %EDITC(SOCIO:'X') + 
+        %EDITC(NUDES:'X');
+
+      IF PA_BAGEN = 'B';
+        dsCCURFR304T.F304TRN = 
+          %EDITC(*DATE:'X') + 
+          %EDITC(SOCIO:'X') + 
+          TRANMIN;
+      ENDIF;
 
       // Nº.DEL SEGMENTO
       //----------------------------------------
@@ -2681,63 +2720,57 @@
 
       // CODIGO ABREVIADO LLAA
       //----------------------------------------
-      dsCCURFR304T.F304CCO = dsLINAEREA.RACOALCO11;
+      dsCCURFR304T.F304CCO = RA_COALCO11;
 
       // CLASE O CODIGO SERVICIO
       //----------------------------------------
-      dsCCURFR304T.F304CSC = dsLINAEREA.RACLASER11;
+      dsCCURFR304T.F304CSC = RA_CLASER11;
 
       // SALIDA: LOCALIDAD/PAIS/FECHA/IND.SAL.EX
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES10; 
+      CHAIN (RA_AERDES10)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304DLO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304DCO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+      dsCCURFR304T.F304DLO = XCIUDA;
+      dsCCURFR304T.F304DCO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304DDA = dsLINAEREA.RAFLLEGA10;
+      dsCCURFR304T.F304DDA = RA_FLLEGA10;
 
       // LLEGADA: LOCALIDAD/PAIS/FECHA/IND.LLE.
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES11; 
+      CHAIN (RA_AERDES11)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304ALO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304ACO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304ALO = XCIUDA;
+        dsCCURFR304T.F304ACO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304ADA = dsLINAEREA.RAFLLEGA11;
+      dsCCURFR304T.F304ADA = RA_FLLEGA11;
 
       // NUMERO DE VUELO
       //----------------------------------------
-      dsCCURFR304T.F304FNU = %EDITC(dsLINAEREA.RANUVUEL11:'X');
+      dsCCURFR304T.F304FNU = %EDITC(RA_NUVUEL11:'X');
 
       // INDICADOR SEGMENTO (ORIGEN/FINAL)
       //----------------------------------------
       dsCCURFR304T.F304OFL = '0'; // NO ORIGEN
 
-      IF dsLINAEREA.RAAERDES12 <> ' ' AND dsLINAEREA.RAAERDES12 <> '000';
+      IF RA_AERDES12 <> ' ' AND RA_AERDES12 <> '000';
         dsCCURFR304T.F304DFL = '0'; // NO FINAL
       ELSE;
         dsCCURFR304T.F304DFL = '1'; // SI FINAL
@@ -2754,39 +2787,50 @@
 
       // NUMERO BILLETE CAMBIADO
       //----------------------------------------
-      IF dsLINAEREA.RATIPDOC <> '1';
+      IF RA_TIPDOC <> '1';
         dsCCURFR304T.F304ETN = %TRIM(dsTRANSAC.GENUMDOC);
       ENDIF;
 
       // Referencias (1-5)
       //----------------------------------------
-      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF01;
-      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF02;
-      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF03;
-      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF04;
-      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF05;
+      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF1;
+      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF2;
+      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF3;
+      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF4;
+      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF5;
 
       // Reservado (Libre)
       //----------------------------------------
       dsCCURFR304T.F304LIB = *BLANKS;
 
+      //TODOREG = CCURFR304PF;  // CCURFR304   
+      TODOREG = dsCCURFR304T;  // CCURFR304   
+      EXCEPT;
+
       // Graba registro en el historico CCURFR304T
       //------------------------------------------
-      Graba_Reg_FR304();
+        PARAM_IDH2 = Graba_Reg_FR304(PARAM_IDP);
     ENDIF;
 
     // ====================================================================
     // GRABAR: CCURFR304PF  SEGMENTO-12                                   
     // ====================================================================
-    IF dsLINAEREA.RACOALCO12 <> ' ' AND 
-		   dsLINAEREA.RACOALCO12 <> '00';
+    IF RA_COALCO12 <> ' ' AND RA_COALCO12 <> '00';
 
+      //CLEAR CCURFR304PF;
       Reset dsCCURFR304T;
       dsCCURFR304T.F304IDR = 304;
       dsCCURFR304T.F304TRN =
-        %EDITC(*DATE:'X') + 
-        %EDITC(WNUMREAL:'X') + 
-        dsTRANSAC.GENUTRAN;
+          %EDITC(*DATE:'X') + 
+        %EDITC(SOCIO:'X') + 
+        %EDITC(NUDES:'X');
+
+      IF PA_BAGEN = 'B';
+        dsCCURFR304T.F304TRN = 
+          %EDITC(*DATE:'X') + 
+          %EDITC(SOCIO:'X') + 
+          TRANMIN;
+      ENDIF;
 
       // Nº.DEL SEGMENTO
       //----------------------------------------
@@ -2794,57 +2838,51 @@
 
       // CODIGO ABREVIADO LLAA
       //----------------------------------------
-      dsCCURFR304T.F304CCO = dsLINAEREA.RACOALCO12;
+      dsCCURFR304T.F304CCO = RA_COALCO12;
 
       // CLASE O CODIGO SERVICIO
       //----------------------------------------
-      dsCCURFR304T.F304CSC = dsLINAEREA.RACLASER12;
+      dsCCURFR304T.F304CSC = RA_CLASER12;
 
       // SALIDA: LOCALIDAD/PAIS/FECHA/IND.SAL.EX
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES11; 
+      CHAIN (RA_AERDES11)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304DLO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304DCO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304DLO = XCIUDA;
+        dsCCURFR304T.F304DCO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FDF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FDF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304DDA = dsLINAEREA.RAFLLEGA11;
+      dsCCURFR304T.F304DDA = RA_FLLEGA11;
 
       // LLEGADA: LOCALIDAD/PAIS/FECHA/IND.LLE.
       //----------------------------------------
-      Exec SQL
-        Select *
-        Into :dsCIUDAD
-        From CIUDAD
-        Where
-          xclave = :dsLINAEREA.RAAERDES12; 
+      CHAIN (RA_AERDES12)         XCITY;    //  CIUDAD     
 
-      IF SqlCode = 0;
-        dsCCURFR304T.F304ALO = dsCIUDAD.XCIUDA;
-        dsCCURFR304T.F304ACO = dsCIUDAD.XPAIS;
-        IF dsCIUDAD.XISONU = '724';
-          dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
-        ELSE;
-          dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+      IF %FOUND;
+        dsCCURFR304T.F304ALO = XCIUDA;
+        dsCCURFR304T.F304ACO = XPAIS;
+        IF %FOUND;
+          IF XISONU = '724';
+            dsCCURFR304T.F304FAF = '0'; // NO EXTRANJERO
+          ELSE;
+            dsCCURFR304T.F304FAF = '1'; // SI EXTRANJERO
+          ENDIF;
         ENDIF;
       ENDIF;
 
-      dsCCURFR304T.F304ADA = dsLINAEREA.RAFLLEGA12;
+      dsCCURFR304T.F304ADA = RA_FLLEGA12;
 
       // NUMERO DE VUELO
       //----------------------------------------
-      dsCCURFR304T.F304FNU = %EDITC(dsLINAEREA.RANUVUEL12:'X');
+      dsCCURFR304T.F304FNU = %EDITC(RA_NUVUEL12:'X');
 
       // INDICADOR SEGMENTO (ORIGEN/FINAL)
       //----------------------------------------
@@ -2862,26 +2900,29 @@
 
       // NUMERO BILLETE CAMBIADO
       //----------------------------------------
-      IF dsLINAEREA.RATIPDOC <> '1';
+      IF RA_TIPDOC <> '1';
         dsCCURFR304T.F304ETN = %TRIM(dsTRANSAC.GENUMDOC);
       ENDIF;
 
       // Referencias (1-5)
       //----------------------------------------
-      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF01;
-      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF02;
-      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF03;
-      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF04;
-      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF05;
+      dsCCURFR304T.F304C01 = dsTRANSAC.GEREF1;
+      dsCCURFR304T.F304C02 = dsTRANSAC.GEREF2;
+      dsCCURFR304T.F304C03 = dsTRANSAC.GEREF3;
+      dsCCURFR304T.F304C04 = dsTRANSAC.GEREF4;
+      dsCCURFR304T.F304C05 = dsTRANSAC.GEREF5;
 
       // Reservado (Libre)
       //----------------------------------------
       dsCCURFR304T.F304LIB = *BLANKS;
 
+      //TODOREG = CCURFR304PF;  // CCURFR304   
+      TODOREG = dsCCURFR304T;  // CCURFR304   
+      EXCEPT;
 
       // Graba registro en el historico CCURFR304T
       //------------------------------------------
-      Graba_Reg_FR304();
+        PARAM_IDH2 = Graba_Reg_FR304(PARAM_IDP);
     ENDIF;
 
     // ====================================================================

@@ -376,6 +376,9 @@
 
           dcl-s WUser char(10) inz(*user);
           Dcl-s WID_Gen zoned(10) inz(0);
+          Dcl-s WDSSISGESOPE Char(167);
+
+          WDSSISGESOPE = DSSISGESOPE;
 
           Exec Sql
             SELECT ID_F303
@@ -386,7 +389,9 @@
                   :P_IDFR303_P,
                   :dsCCURFR303T,
                   default,
-                  :WUser));
+                  :WUser,
+                  :WDSSISGESOPE)
+                  );
 
           If Sqlcode <> 0;
             observacionSql = 'Error al grabar en la tabla CCURFR303T';
@@ -409,6 +414,9 @@
 
           dcl-s WUser char(10) inz(*user);
           Dcl-s WID_Gen zoned(10) inz(0);
+          Dcl-s WDSSISGESOPE Char(167);
+
+          WDSSISGESOPE = DSSISGESOPE;
 
           Exec Sql
             SELECT ID_F304
@@ -419,7 +427,9 @@
                   :P_IDFR304_P,
                   :dsCCURFR304T,
                   default,
-                  :WUser));
+                  :WUser,
+                  :WDSSISGESOPE)
+                  );
 
           If Sqlcode <> 0;
             observacionSql = 'Error al grabar en la tabla CCURFR304T';

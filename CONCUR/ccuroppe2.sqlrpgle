@@ -114,6 +114,8 @@
   dcl-s P_IDFRXXX_H2 Zoned(10);
   dcl-s WOpageco     Char(10);
   Dcl-s WID_Control  Zoned(10);
+  Dcl-s WID_Fichero  Zoned(10);
+  Dcl-s WTlabel      Char(10);
 
   /Copy Explota/Qrpglesrc,CCURCPY
   /copy UTILITIES/QRPGLESRC,P_SDS       // SDS
@@ -122,6 +124,7 @@
 
   Dcl-ds dsCCUROPEENV likeds(dsCCUROPEENVTpl) Inz;
   Dcl-ds dsCCURCTLENV likeds(dsCCURCTLENVTpl) Inz;
+
 
   LABSISGES  = 'SISGESCCUR';
   LABPA      = 'PA';
@@ -169,6 +172,23 @@
       ITER;
     ENDIF;
 
+    Exec SQL
+      Select tlabel
+      Into :Wtlabel
+      From SISGESCFAC
+      Where
+        tgrupo = :TGRUPO
+        AND tempre = :TEMPRE 
+        AND tnreal = :TNREAL;
+
+      If Sqlcode <> 0;
+          observacionSql = 'Error en lectura del SISGESCFAC';
+          Clear Nivel_Alerta;
+          Nivel_Alerta = Diagnostico(Sds.ProgramName:observacionSql);
+          ITER;
+      Endif;
+
+      WID_Fichero = Graba_Ficheros_Enviados();    
     //                                                            
     //   BAGENCON          OPERACIONES SIN CRUZAR                 
     //                                                            
@@ -307,14 +327,6 @@
               Graba_Operaciones_Reg_Control(400:P_IDFRXXX_P:0:'  ');
               Graba_Operaciones_Reg_Control(401:P_IDFRXXX_P:P_IDFRXXX_H1:'  ');  
             ENDIF;
-
-            // IF ENVIO  = 'SI' AND GETIPRE <> 'RO';
-            //   CCURPMCRE(PARAM_PTR);                    // Formato: 400
-            // ENDIF;
-
-            // IF ENVIO  = 'SI' AND GETIPRE = 'RO';
-            //   CCURPMCRE(PARAM_PTR);                    // Formato: 400
-            // ENDIF;
 
             IF ENVIO  = 'NO';
               P_IDFRXXX_P = 0;
@@ -558,12 +570,6 @@
       IF (%FOUND(OPAGECOLI3) And Not ES_V) or
           (%FOUND(OPAGEVCLG8) And ES_V);
 
-        // Javier turegano 04-02-13 (concur)
-        // IF NOT UNAVEZ;                           // Formato: 100
-        // TITULAR(TNREAL:TCODSG);                  // Formato: 100
-        // UNAVEZ = *ON;                            // Formato: 100
-        // ENDIF;                                   // Formato: 100
-
         ENVIO = 'NO';                                //NO  ENVIO FORMATO-400/401
         CHAIN (PNUREA:001) TSISGESR;
 
@@ -578,15 +584,6 @@
           Graba_Operaciones_Reg_Control(400:P_IDFRXXX_P:0:'  ');
           Graba_Operaciones_Reg_Control(401:P_IDFRXXX_P:P_IDFRXXX_H1:'  ');  
         ENDIF;
-
-        // IF ENVIO  = 'SI' AND GETIPRE <> 'RO';
-        //   CCURPMCRE(PARAM_PTR);                    // Formato: 400
-        // ENDIF;
-
-        // IF ENVIO  = 'SI' AND GETIPRE = 'RO';
-        //   CCURPMCRE(PARAM_PTR);                    // Formato: 400
-        // ENDIF;
-
 
         IF ENVIO  = 'NO';
           P_IDFRXXX_P = 0;
@@ -754,10 +751,12 @@
     dsCCUROPEENV.Tipo_Servicio_Minerva = p_Tipo_Servicio_Minerva;
     dsCCUROPEENV.Fecha_Generacion = %Timestamp();
     dsCCUROPEENV.Usuario_Generacion = WUser;
+    //dsCCUROPEENV.Fecha_Concur_Out = '0001-01-01-00.00.00.000000';
+    //dsCCUROPEENV.ID_Ficheros = WID_Fichero;
 
     Exec SQL
       INSERT INTO CONCUR_OPERACIONES_ENVIADAS 
-      VALUES (:dsCCUROPEENV);
+      VALUES (:dsCCUROPEENV,Default,:WID_Fichero);
 
     If Sqlcode <> 0;
       observacionSql = 'Error al grabar en la tabla CONCUR_OPERACIONES_ENVIADAS';
@@ -798,6 +797,34 @@
 
     If Sqlcode <> 0;
       observacionSql = 'Error al grabar en la tabla CONCUR_Control_Ope_Env';
+      Clear Nivel_Alerta;
+      Nivel_Alerta = Diagnostico(Sds.ProgramName:observacionSql);
+      Return 0;
+    Endif;
+
+    Return WID_Gen;
+  end-proc;
+  //---------------------------------------------------------------
+  // Graba Registro control de Ficheros a Enviar a CONCUR
+  //---------------------------------------------------------------
+  dcl-proc Graba_Ficheros_Enviados;
+
+    dcl-pi Graba_Ficheros_Enviados Zoned(10);
+
+    end-pi;
+
+    dcl-s WUser char(10) inz(*user);
+    Dcl-s WID_Gen zoned(10) inz(0);
+
+    Exec Sql
+      SELECT ID_Fichero
+        INTO :WID_Gen
+      FROM FINAL TABLE (
+          INSERT INTO CONCUR_Ficheros_Enviados 
+          VALUES (default,:Wtlabel,default));
+
+    If Sqlcode <> 0;
+      observacionSql = 'Error al grabar en la tabla CONCUR_Ficheros_Enviados';
       Clear Nivel_Alerta;
       Nivel_Alerta = Diagnostico(Sds.ProgramName:observacionSql);
       Return 0;
