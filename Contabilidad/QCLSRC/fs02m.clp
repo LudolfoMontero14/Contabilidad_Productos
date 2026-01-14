@@ -198,75 +198,16 @@
                           Programa FSPAFA en +
                           ejecucion                    ' ' ' FS02)
 
-          /* CALL       PGM(PARONMC020) */
+     /*--------------------------------------------------------*/
+     /*    Nueva version del FSPAFA (Actualizacion)       LM   */
+     /*    PARALELO                                            */
+     /*--------------------------------------------------------*/
 
-             /*CRTPF      FILE(FICHEROS/ASIFSPAFA) +
-                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFIVA) +
-                          TEXT('asiento traspaso PA a FA') +
-                          OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
-                          LVLCHK(*NO) AUT(*ALL)*/
+             SBMJOB     CMD(CALL PGM(Paraleloc/FSPAFAN_P) + 
+                        PARM(('FS02M'))) +
+                          JOB(FSPAFAN_P) INLLIBL(PARALELOC EXPLOTA)
 
-             /*CL1        LABEL(EVIPAFA) LIB(FICHEROS) LON(132)*/
-             /*OVRDBF     FILE(ASIFIVA) TOFILE(FICHEROS/ASIFSPAFA)*/
-             /*OVRDBF     FILE(BS)      TOFILE(FICHEROS/BS)*/
-             /*CALL       PGM(EXPLOTA/FSPAFA)*/
-             /*DLTOVR     FILE(ASIFIVA)*/
-             /*DLTOVR     FILE(BS)*/
-
-             /* Crea Evidencias Contables */
-             /*RTVMBRD    FILE(FICHEROS/ASIFSPAFA) NBRCURRCD(&NUMREG)*/
-             /*IF         COND(&NUMREG > 0) THEN(DO)*/
-             /*CALL       PGM(SUBRUDIN/EVIADDCL) PARM('EVIPAFA ' +*/
-             /*             'ASIFSPAFA' 'FACTURACION DINERS ' +*/
-             /*             'FS01      ' '      ' ' ')*/
-             /*CHGJOB     DATE(&FECHA)*/
-             /*ENDDO*/
-
-             /*CRTPF      FILE(FICHEROS/ASIPAFAMC) +
-                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFILEN) +
-                          TEXT('Asientos FSPAFAMC') +
-                          OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
-                          LVLCHK(*NO) AUT(*ALL)*/
-             /*MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
-                          FILE(FICHEROS/ASIPAFAMC))*/
-
-             /*CL1        LABEL(EVIPAFAMC) LIB(FICHEROS) LON(132)*/
-
-             /*OVRDBF     FILE(BS)       TOFILE(FICHEROS/BS)*/
-             /*OVRDBF     FILE(ASIFILEN) TOFILE(FICHEROS/ASIPAFAMC)*/
-             /*CALL       PGM(EXPLOTA/FSPAFAMC)*/
-             /*DLTOVR FILE(ASIFILEN)*/
-             /*DLTOVR     FILE(BS)*/
-
-             /* Crea Evidencias Contables */
-             /*RTVMBRD    FILE(FICHEROS/ASIPAFAMC) NBRCURRCD(&NUMREG)*/
-             /*IF         COND(&NUMREG > 0) THEN(DO)*/
-             /*CALL       PGM(SUBRUDIN/EVIADDCL) PARM('EVIPAFAMC ' +
-                          'ASIPAFAMC' 'FACTURACION MC ' +
-                          'FS01      ' '      ' ' ')*/
-             /*CHGJOB     DATE(&FECHA)*/
-
-             /*OVRDBF FILE(ASIFILE) TOFILE(FICHEROS/ASIPAFAMC)*/
-             /*CALL PGM(EXPLOTA/ACASBON) PARM('002')*/
-             /*DLTOVR FILE(ASIFILE)*/
-
-             /*CHGJOB     DATE(&FECHA)*/
-         /*  CALL       PGM(PARONMC17) */
-
-     /* VERIFICACIONES MC ************************************ */
-     /*   *VERIFICAR SALIDA:                                   */
-     /*     -ASIPAFAMC => ASIBOLSA                             */
-     /* ****************************************************** */
-
-          /*   CHGVAR VAR(&TEX) VALUE('FS01M, DESPUES DE PGM-ACASBON')*/
-          /*   CALL PGM(EXPLOTA/CONCOPCL) PARM(ASIPAFAMC FICHEROS +
-                  ASIRECFSMC LIBSEG30D 'C' ' ' ' ' &TEX FS01)*/
-          /*   ENDDO*/
-
-          /* CALL       PGM(PARONPAFAN)    */
-     /* VERIFICACIONES MC ************************************ */
-     /*    *ASIPAFAMC: VERIFICAR ACUMULA ASIBOLSA              */
-     /* ****************************************************** */
+     /*--------------------------------------------------------*/
 
      /*--------------------------------------------------------*/
      /*    Nueva version del FSPAFA                            */

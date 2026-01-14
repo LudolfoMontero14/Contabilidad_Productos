@@ -55,10 +55,13 @@
 
   // ASIENTO
   dcl-pr CONTABSRV_Obtener_Datos_Asiento ind;
-    // Puede venir informada la clave para acceder a la tabla ASIENTOS_CUENTAS_POR_PRODUCTO
-    // y los datos parametrizables los cogemos de ahí. ESTE PARAMETRO TIENE PRIORIDAD.
+    // Puede venir informada la clave para acceder a la tabla 
+    // ASIENTOS_CUENTAS_POR_PRODUCTO
+    // y los datos parametrizables los cogemos de ahí. 
+    // ESTE PARAMETRO TIENE PRIORIDAD.
     dsKeyAsiento likeds(dsKeyAsientoTpl);
-    // O puede venir informada una DS con los datos, que en vez de parametrizarse en tabla,
+    // O puede venir informada una DS con los datos, que en vez de 
+    // parametrizarse en tabla,
     // se mandan directamente por ser casos especiales.
     dsDatosAsientoParametrizables likeds(dsDatosAsientoParametrizablesTpl);
     // Estos son los datos del asiento que no se pueden parametrizar
@@ -69,7 +72,8 @@
 
   dcl-pr CONTABSRV_Obtener_Datos_Parametrizados_Asiento ind;
     dsKeyAsiento likeds(dsKeyAsientoTpl);   // Parámetro de entrada
-    dsDatosAsientoParametrizables likeds(dsDatosAsientoParametrizablesTpl); // Parámetro de salida
+    // Parámetro de salida
+    dsDatosAsientoParametrizables likeds(dsDatosAsientoParametrizablesTpl); 
   end-pr;
 
   dcl-pr CONTABSRV_Grabar_Asiento ind;

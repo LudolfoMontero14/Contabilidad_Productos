@@ -71,7 +71,7 @@
   // --------------------------
   // Declaracion de Variables Globales
   // --------------------------
-  dcl-s WNumEstab     Packed(7:0) Inz(251896);  //Cod. Estab. BINTER
+  dcl-s WNumEstab     Packed(7:0) Inz(251882);  //Cod. Estab. BINTER
   // Analizar crear tabla de configuracion
   // SGF_Establecimientos_Facturadores
   dcl-s filePath       varchar(256) inz('/usr/AWS-mails/attachment/');
@@ -426,39 +426,6 @@
     Dcl-s Wsocio        Zoned(8);
     Dcl-s WExiste_Tarj  Ind Inz(*Off);
 
-    // Wsocio  = %Dec(%Subst(dsAMABINDET.CREDITCARDNUMBER:3:8):8:0);
-
-    // Exec Sql
-    //   Select
-    //     '1'
-    //   Into :WExiste_Tarj
-    //   From T_MSOCIO
-    //   Where NUREAL = :Wsocio;
-
-    // If SqlCode < 0;
-    //   observacionSql = 'Error en lectura de T_MSOCIO. ' +
-    //                    'Numero Tarjeta: ' + 
-    //                    %Trim(dsAMABINDET.CREDIT_CARD_NUMBER);
-    //   Clear Nivel_Alerta;
-    //   Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-    //   If Nivel_Alerta = 'HI';
-    //     *InH1 = *On;
-    //     *InLR = *On;
-    //     Return *Off;
-    //   EndIf;
-    //   Return *Off;
-    // EndIf;
-
-    // If SqlCode = 100;
-    //   observacionSql = 'Tarjeta no existente en T_MSOCIO. ' +
-    //                    'Numero Tarjeta: ' + 
-    //                    %Trim(dsAMABINDET.CREDIT_CARD_NUMBER);
-    //   Clear Nivel_Alerta;
-    //   Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-    //   ErrorRecord = 'BIN0001';
-    //   Return *Off;
-    // EndIf;
-
     // Se valida que no sea Moneda diferente a EUR
     If dsAMABINDET.CURRENCY_CODE<>'EUR';
       // Error existen operaciones en Moneda Extranjera
@@ -469,39 +436,6 @@
     Return *On;
 
   end-proc;
-  // //-----------------------------------------------------------------
-  // // Actualiza Registro AMADEUS_BINTER_INVOICE_FILES
-  // //-----------------------------------------------------------------
-  // dcl-proc Actualiza_Record_File;
-
-  //   dcl-pi *n Ind;
-  //     Cod_Proc  Zoned(2) Const;
-  //   end-pi;
-
-  //   Exec Sql
-  //     Update AMADEUS_BINTER_INVOICE_FILES
-  //     Set
-  //       PROCESSED = :Cod_Proc,
-  //       UPDATE_DATE = current timestamp
-  //     Where
-  //       ID = :dsAMADEUS_Files.ID
-  //   ;
-
-  //   If Sqlcode < 0;
-  //     observacionSql = 'Error en el Update del AMADEUS_BINTER_INVOICE_FILES';
-  //     Clear Nivel_Alerta;
-  //     Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-  //     If Nivel_Alerta = 'HI';
-  //       *InH1 = *On;
-  //       *InLR = *On;
-  //       Return *Off;
-  //     EndIf;
-  //     Return *Off;
-  //   EndIf;
-
-  //   Return *On;
-
-  // end-proc;
   //-----------------------------------------------------------------
   // Actualiza Registro
   //-----------------------------------------------------------------

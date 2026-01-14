@@ -60,7 +60,7 @@ PGM &NomProc
     /*-------------------------------------------------------*/
     /* Actualiza Auditoria Paralelo                          */
     /*-------------------------------------------------------*/
-    Call CONTAB100 Parm(&NomProc      +
+    Call CONTAB101 Parm(&NomProc      +
                     'ASIPAFAN'        +
                     'CABEPAFA'        +
                     'DETEPAFA'        +
