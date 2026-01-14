@@ -1,0 +1,150 @@
+/*------------------------------------------------------------------*/
+/* Modulo de BINTER - Recepcion y procesamiento de Operaciones      */
+/* Autor: Ludolfo Montero                                           */
+/* Fecha: Marzo 2025                                                */
+/*------------------------------------------------------------------*/
+/*  Procesas las operaciones Pendientes de BINTER/AMADEUS           */
+/*------------------------------------------------------------------*/
+             PGM
+
+             DCL        VAR(&DATOS) TYPE(*CHAR) LEN(14) +
+                          VALUE('BIN1000CL')
+             DCL        VAR(&PROCE) TYPE(*CHAR) LEN(10) +
+                          VALUE('BIN1000CL')
+             DCL        VAR(&DESCRIP) TYPE(*CHAR) LEN(80)
+             DCL        VAR(&MSG) TYPE(*CHAR) LEN(300)
+             DCL        VAR(&PRIORID) TYPE(*DEC) LEN(1 0) VALUE(9)
+             DCL        VAR(&TEX)     TYPE(*CHAR) LEN(50)
+/*-------------------------*/
+/* NUEVOS (No. de Trabajo) */
+/*-------------------------*/
+             DCL        VAR(&FECHA)   TYPE(*CHAR) LEN(6)
+             DCL        VAR(&TRAALF) TYPE(*CHAR) LEN(3) VALUE('   ')
+             DCL        VAR(&TRAGRU) TYPE(*CHAR) LEN(1) VALUE('1') +
+                          /* Grupo: Soportes Magneticos */
+             DCL        VAR(&RANDES) TYPE(*CHAR) LEN(6) VALUE('      ')
+             DCL        VAR(&RANHAS) TYPE(*CHAR) LEN(6) VALUE('      ')
+/*-------------------------*/
+
+             DCL        VAR(&BINDTA) TYPE(*DEC) LEN(9) VALUE(0)
+/*------------------------------------------------------------------*/
+             RTVSYSVAL  SYSVAL(QDATE) RTNVAR(&FECHA)
+
+             CHGJOB     DATE(&FECHA)
+/*------------------------------------------------------------------*/
+/*                CARGAR SEGUIMIENTO DE CL'S                        */
+/*------------------------------------------------------------------*/
+
+             CALL       PGM(EXPLOTA/TRACE3) PARM(&DATOS)
+
+             CALL       PGM(EXPLOTA/TRACE) PARM('COMIENZA PROCESO +
+                          BIN1000CL   ' ' ' 'BIN1000CL')
+
+             CHGVAR     VAR(&TEX) VALUE('BIN1000CL, ANTES DEL +
+                          PGM-BIN0100      ')
+
+             CALL       PGM(EXPLOTA/CONCOPCL) PARM(AMABINDET FICHEROS +
+                          AMABINDET LIBSEG1D 'P' ' ' ' ' &TEX BIN1000)
+/*------------------------------------------------------------------*/
+/*    Verificacion de que no es este ejecutandose                   */
+/*------------------------------------------------------------------*/
+             ALCOBJ     OBJ((*LIBL/BINDTA *DTAARA *EXCL)) WAIT(5)
+             MONMSG     CPF0000 *NONE EXEC(DO)
+
+             CHGVAR     VAR(&MSG) VALUE('LA "BINDTA" esta alocada +
+                          por otro trabajo, se cancela, investigar +
+                          BIN1000CL')
+
+             CHGVAR     VAR(&DESCRIP) VALUE('LA "BINDTA" esta +
+                          alocada por otro trabajo,se cancela, +
+                          investigar BIN1000CL')
+
+             SNDDST     TYPE(*LMSG) +
+                          TOINTNET((desarrollo2@dinersclub.es *PRI)) +
+                          DSTD('EJECUTANDOSE PROCESO DE BINTER') +
+                          LONGMSG(&MSG)
+
+             GOTO       CMDLBL(FINAL)
+
+             ENDDO
+
+             RTVDTAARA  DTAARA(BINDTA) RTNVAR(&BINDTA)
+/*-------------------------------------------------------------------*/
+/*                   ASIGNAR NUMERO DE TRABAJO                       */
+/*-------------------------------------------------------------------*/
+             ALCOBJ     OBJ((FICHEROS/NUMETRACA *FILE *EXCL)) WAIT(5)
+             MONMSG     CPF0000 *NONE EXEC(DO)
+
+             CHGVAR     VAR(&MSG) VALUE('El fichero NUMETRACA esta +
+                          alocada por otro trabajo investigar, +
+                          BIN1000CL. ')
+
+             CHGVAR     VAR(&DESCRIP) VALUE('El fichero NUMETRACA +
+                          esta alocada por otro trabajo investigar, +
+                          BIN1000CL. ')
+
+             CALL       PGM(EXPLOTA/PRINCIDENC) PARM(&PROCE &DESCRIP +
+                          &PRIORID)
+
+             SNDDST     TYPE(*LMSG) +
+                          TOINTNET((operadores@dinersclub.es *PRI)) +
+                          DSTD('ASIGNAR NUMERO DE TRABAJO +
+                          -BIN1000CL') LONGMSG(&MSG)
+
+             GOTO       CMDLBL(FINAL)
+             ENDDO
+
+             DLCOBJ     OBJ((FICHEROS/NUMETRACA *FILE *EXCL))
+
+             RTVJOBA    DATE(&FECHA)
+
+             CALL       PGM(EXPLOTA/NUMTRA1) PARM(&FECHA &TRAGRU +
+                          &TRAALF &RANDES &RANHAS)
+
+/*------------------------------------------------------------------*/
+/* Activacion de Control de Compromiso                              */
+/*------------------------------------------------------------------*/
+             STRCMTCTL  LCKLVL(*ALL)
+/*------------------------------------------------------------------*/
+/* Procesa los registros Pendientes y Genera el NMOV                */
+/*------------------------------------------------------------------*/
+             CALL       PGM(BIN0100) PARM(&TRAALF +
+                          &RANDES &RANHAS)
+
+             MONMSG MSGID(CPF0000 RPG0000) EXEC(DO)
+            /* Si hay error, hacer rollback y salir del programa */
+              ROLLBACK
+              ENDCMTCTL
+
+              CHGVAR     VAR(&MSG) +
+              VALUE('** ERROR EN EL PROCESO DE BINTER ** +
+              --> CLP.BIN1000CL')
+
+              SNDDST     TYPE(*LMSG) +
+             TOINTNET((GrupoAS400@dinersclub.es)) +
+             DSTD('BINTER: GENERACION DE NMOV ') +
+             LONGMSG(&MSG)
+
+              GOTO CMDLBL(ENDPGM)
+             ENDDO
+             /* Se actualiza los cambios si no hay errores */
+             COMMIT
+             ENDCMTCTL
+
+            CHGVAR     VAR(&MSG) +
+              VALUE('** PROCESO DE BINTER FINALIZO CORRECTAMENTE ** +
+              --> CLP.BIN1000CL')
+
+              SNDDST     TYPE(*LMSG) +
+             TOINTNET((GrupoAS400@dinersclub.es)) +
+             DSTD('BINTER: GENERACION DE NMOV  ') +
+             LONGMSG(&MSG)
+/*------------------------------------------------------------------*/
+/*                        --FIN DE PROCESO--                        */
+/*------------------------------------------------------------------*/
+ SIGUE1:     DLCOBJ     OBJ((FICHEROS/BINDTA *DTAARA *EXCL))
+             MONMSG     MSGID(CPF0000)
+/*-------------------------------------------------------------------*/
+ FINAL:      CALL       PGM(EXPLOTA/TRACE) PARM(('FIN') (' ') +
+                          ('BIN1000CL'))
+ ENDPGM:     ENDPGM
