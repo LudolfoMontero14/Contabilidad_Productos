@@ -5,7 +5,7 @@
 /*------------------------------------------------------------------*/
 /*  Procesas las operaciones Pendientes de BINTER/AMADEUS           */
 /*------------------------------------------------------------------*/
-             PGM
+             PGM   &Proc
 
              DCL        VAR(&DATOS) TYPE(*CHAR) LEN(14) +
                           VALUE('BIN1000CL')
@@ -15,6 +15,7 @@
              DCL        VAR(&MSG) TYPE(*CHAR) LEN(300)
              DCL        VAR(&PRIORID) TYPE(*DEC) LEN(1 0) VALUE(9)
              DCL        VAR(&TEX)     TYPE(*CHAR) LEN(50)
+             DCL        VAR(&Proc)    TYPE(*CHAR) LEN(2)
 /*-------------------------*/
 /* NUEVOS (No. de Trabajo) */
 /*-------------------------*/
@@ -27,24 +28,31 @@
 /*-------------------------*/
 
              DCL        VAR(&BINDTA) TYPE(*DEC) LEN(9) VALUE(0)
+             DCL        VAR(&NOMSAVF) TYPE(*CHAR) LEN(10)
 /*------------------------------------------------------------------*/
              RTVSYSVAL  SYSVAL(QDATE) RTNVAR(&FECHA)
+
+             CALL PGM(NOEXISTE)
 
              CHGJOB     DATE(&FECHA)
 /*------------------------------------------------------------------*/
 /*                CARGAR SEGUIMIENTO DE CL'S                        */
 /*------------------------------------------------------------------*/
-
-             CALL       PGM(EXPLOTA/TRACE3) PARM(&DATOS)
-
-             CALL       PGM(EXPLOTA/TRACE) PARM('COMIENZA PROCESO +
-                          BIN1000CL   ' ' ' 'BIN1000CL')
+             CHGVAR     VAR(&NOMSAVF) VALUE('BIN' *CAT &FECHA)
 
              CHGVAR     VAR(&TEX) VALUE('BIN1000CL, ANTES DEL +
                           PGM-BIN0100      ')
 
-             CALL       PGM(EXPLOTA/CONCOPCL) PARM(AMABINDET FICHEROS +
-                          AMABINDET LIBSEG1D 'P' ' ' ' ' &TEX BIN1000)
+             CRTSAVF    FILE(LIBSEG1D/&NOMSAVF) TEXT(&TEX)
+             MONMSG     MSGID(CPF7302) EXEC(CLRSAVF +
+                          FILE(LIBSEG1D/&NOMSAVF))
+
+             SAVOBJ     OBJ(AMABINDET) LIB(FICHEROS) DEV(*SAVF) +
+                          SAVF(LIBSEG1D/&NOMSAVF) SAVACT(*SYSDFN)
+             MONMSG     MSGID(CPF0000)
+
+         /*  CALL       PGM(EXPLOTA/CONCOPCL) PARM(AMABINDET FICHEROS +
+                          AMABINDET LIBSEG1D 'P' ' ' ' ' &TEX BIN1000)*/
 /*------------------------------------------------------------------*/
 /*    Verificacion de que no es este ejecutandose                   */
 /*------------------------------------------------------------------*/
@@ -104,10 +112,13 @@
 /*------------------------------------------------------------------*/
 /* Activacion de Control de Compromiso                              */
 /*------------------------------------------------------------------*/
-             STRCMTCTL  LCKLVL(*ALL)
+          /*   STRCMTCTL  LCKLVL(*ALL) */
 /*------------------------------------------------------------------*/
 /* Procesa los registros Pendientes y Genera el NMOV                */
 /*------------------------------------------------------------------*/
+        /* Monta las librerias necesarias para el NOXDB */
+             CALL       PGM(RESTDINERS/WHWEBSETLB)
+
              CALL       PGM(BIN0100) PARM(&TRAALF +
                           &RANDES &RANHAS)
 
@@ -125,11 +136,14 @@
              DSTD('BINTER: GENERACION DE NMOV ') +
              LONGMSG(&MSG)
 
+             ChgVar Var(&Proc) Value('KO')
               GOTO CMDLBL(ENDPGM)
              ENDDO
              /* Se actualiza los cambios si no hay errores */
              COMMIT
              ENDCMTCTL
+
+            ChgVar Var(&Proc) Value('OK')
 
             CHGVAR     VAR(&MSG) +
               VALUE('** PROCESO DE BINTER FINALIZO CORRECTAMENTE ** +
@@ -145,6 +159,5 @@
  SIGUE1:     DLCOBJ     OBJ((FICHEROS/BINDTA *DTAARA *EXCL))
              MONMSG     MSGID(CPF0000)
 /*-------------------------------------------------------------------*/
- FINAL:      CALL       PGM(EXPLOTA/TRACE) PARM(('FIN') (' ') +
-                          ('BIN1000CL'))
+ FINAL:
  ENDPGM:     ENDPGM

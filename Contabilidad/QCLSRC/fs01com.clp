@@ -2017,7 +2017,17 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
              CALL       PGM(MSGGUARDCL) PARM(&DESCTOT &CODRET)
              GOTO       CMDLBL(VERECI)
              ENDDO
-/*---*/
+
+     /*--------------------------------------------------------*/
+     /*    Nueva version del CEREFS (CEREFSN)             LM   */
+     /*    PARALELO - Contabilidad por Producto                */
+     /*--------------------------------------------------------*/
+
+             SBMJOB     CMD(CALL PGM(PARALELOC/CEREFSN_P) + 
+                        PARM(('FS01COM'))) +
+                        JOB(CEREFSN_P) INLLIBL(PARALELOC EXPLOTA)
+
+     /*--------------------------------------------------------*/
              CHGVAR     VAR(&TEX) VALUE('FS01CO, ANTES DE PGM-CEREFS')
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(BORECI FICHEROS +
                           BORECI LIBSEG30D C ' ' ' ' &TEX FS01CO)
@@ -2715,19 +2725,17 @@ RE54:        CHGVAR     VAR(&TEX) VALUE('FS01CO, DESPUES DEL +
              CALL       PGM(EXPLOTA/TRACE) PARM('Programa -FSPAFA- +
                           en Ejecucion' ' ' FS01CO)
 
-             /*CRTPF      FILE(FICHEROS/ASIFSPAFA) +
-                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFIVA) +
-                          TEXT('asiento traspaso PA a FA') +
-                          OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
-                          LVLCHK(*NO) AUT(*ALL)*/
 
-             /*CHKOBJ     OBJ(FICHEROS/EVIPAFA) OBJTYPE(*FILE)*/
-             /*MONMSG     MSGID(CPF9801) EXEC(DO) */
-             /*   CL1        LABEL(EVIPAFA) LIB(FICHEROS) LON(132)*/
-             /*ENDDO  */
+     /*--------------------------------------------------------*/
+     /*    Nueva version del FSPAFA (Actualizacion)       LM   */
+     /*    PARALELO                                            */
+     /*--------------------------------------------------------*/
 
-             /*OVRDBF     FILE(ASIFIVA) TOFILE(FICHEROS/ASIFSPAFA)*/
-             /*CALL       PGM(EXPLOTA/FSPAFA)*/
+             SBMJOB     CMD(CALL PGM(Paraleloc/FSPAFAN_P) + 
+                        PARM(('FS01COM'))) +
+                          JOB(FSPAFAN_P) INLLIBL(PARALELOC EXPLOTA)
+
+     /*--------------------------------------------------------*/
 
      /*--------------------------------------------------------*/
      /*    Nueva version del FSPAFA                            */

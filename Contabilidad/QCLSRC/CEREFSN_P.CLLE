@@ -65,7 +65,7 @@ PGM &NomProc
     /*-------------------------------------------------------*/
     /* Actualiza Auditoria Paralelo                          */
     /*-------------------------------------------------------*/
-    Call CONTAB100 Parm(&NomProc      +
+    Call CONTAB101 Parm(&NomProc      +
                     'ASICEREFSN'        +
                     'CABECERE'        +
                     'CABECERE'        +

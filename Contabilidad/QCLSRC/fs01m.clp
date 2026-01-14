@@ -3188,6 +3188,16 @@ VERECI:      CHGVAR     VAR(&ACCION) VALUE('C')
              GOTO       CMDLBL(VERECI)
              ENDDO
 /*---*/
+     /*--------------------------------------------------------*/
+     /*    Nueva version del CEREFS (CEREFSN)             LM   */
+     /*    PARALELO - Contabilidad por Producto                */
+     /*--------------------------------------------------------*/
+
+             SBMJOB     CMD(CALL PGM(PARALELOC/CEREFSN_P) + 
+                        PARM(('FS01M'))) +
+                        JOB(CEREFSN_P) INLLIBL(PARALELOC EXPLOTA)
+
+     /*--------------------------------------------------------*/
              CHGVAR     VAR(&TEX) VALUE('FS01, ANTES DE PGM-CEREFS')
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(BORECI FICHEROS +
                           BORECI LIBSEG30D P ' ' ' ' &TEX FS01)

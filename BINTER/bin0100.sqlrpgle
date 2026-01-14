@@ -15,7 +15,7 @@
   // ------------------------------------------------------------------------
   ctl-opt option(*srcstmt : *nodebugio : *noexpdds)
     decedit('0,') datedit(*DMY/)
-    bnddir('UTILITIES/UTILITIES':'NOXDB':'HTTPAPI':'EXPLOTA/CALDIG')
+    bnddir('UTILITIES/UTILITIES':'NOXDB':'HTTPAPI':'EXPLOTA/CALDIG':'CRYPT')
     dftactgrp(*no) actgrp(*new) main(main);
 
   // --------------------------
@@ -30,12 +30,13 @@
   // --------------------------
   // Cpys y Include
   // --------------------------
-  /copy EXPLOTA/QRPGLESRC,BINCPY_H    // Estructuras BINTER
+  /copy EXPLOTA/QRPGLESRC,BINCPY_H      // Estructuras BINTER
   /copy UTILITIES/QRPGLESRC,PSDSCP      // psds
   /copy UTILITIES/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
-  /COPY   EXPLOTA/QRPGLESRC,UTILITIESH
+  /COPY EXPLOTA/QRPGLESRC,UTILITIESH
+  /include QRPGLESRC,XXXCRYGE_H         // Crypto API
 
-
+  /copy UTILITIES/QRPGLESRC,PCISRV_CP // Fuicion de Enmascaramiento
   /copy EXPLOTA/QRPGLESRC,OPECRTSRVH  // Procedimientos de Operaciones
   /copy EXPLOTA/QRPGLESRC,OPE_DS_COP  // DS Tablas de Operaciones
 
@@ -60,9 +61,10 @@
 
   dcl-ds dsRecord Qualified dim(1000) Inz;
     Cod_File       Zoned(10);
-    Num_Tarjeta    VarChar(16);
+    Num_Tarjeta    VarChar(19);
     NamePassg      VarChar(25);
     DocNumber      VarChar(10);
+    Txn_Code       Char(2);
     Importe        Zoned(13:2);
     Cod_Error      Char(7);
     Dsc_Error      VarChar(200);
@@ -71,7 +73,7 @@
   // --------------------------
   // Declaracion de Variables Globales
   // --------------------------
-  dcl-s WNumEstab     Packed(7:0) Inz(251896);  //Cod. Estab. BINTER
+  dcl-s WNumEstab     Packed(7:0);  //Cod. Estab. BINTER
   // Analizar crear tabla de configuracion
   // SGF_Establecimientos_Facturadores
   dcl-s filePath       varchar(256) inz('/usr/AWS-mails/attachment/');
@@ -108,6 +110,10 @@
   Dcl-S V_Srclin         Char(13);
   Dcl-S V_Linea          Char(13);
   Dcl-S V_Time_Stamp     timestamp ;
+
+  Dcl-S WTarj_Si_14      Ind;
+  Dcl-s Wsocio        Zoned(8);
+  dcl-s Wtarjeta      Char(16);
 
   dcl-c Euro      const(x'20');
   // --------------------------
@@ -148,7 +154,7 @@
       IFNULL(RESERVED_SPACE_1, ' '),
       IFNULL(CLIENT_REFERENCE, ' '),
       IFNULL(DEBIT_CREDIT_AMOUNT, 0),
-      IFNULL(APPROVAL_CODE, ' '),
+      IFNULL(APPROVAL_CODE, '          '),
       IFNULL(SEQUENCE_NUMBER, ' '),
       IFNULL(INVOICE_DATE, '0001-01-01'),
       IFNULL(RESERVED_SPACE_2, ' '),
@@ -176,7 +182,7 @@
       IFNULL(RESERVED_SPACE_4, ' '),
       IFNULL(SUBENTITY_CODE, ' '),
       IFNULL(INVOICE_NUMBER, ' '),
-      IFNULL(MERCHANT_NUMBER, ' '),
+      IFNULL(MERCHANT_NUMBER, 0),
       IFNULL(EXTENDED_FORM_OF_PAYMENT, ' '),
       IFNULL(EXPIRY_DATE_CREDIT_CARD, ' '),
       IFNULL(COMMISSION, ' '),
@@ -235,15 +241,8 @@
 
       Wcontador = 0;
       If Not Procesa_ANADEUS_Detail(dsAMADEUS_Files.ID);
-         // Actualiza Registro Cabecera Fichero (ERROR)
-         //Actualiza_Record_File(2);
          Iter;
       EndIf;
-
-      // Actualizacion Registro Cabecera Fichero (Procesado)
-      // If Not Actualiza_Record_File(1);
-      //   Iter;
-      // EndIf;
 
     enddo;
 
@@ -299,6 +298,7 @@
     end-pi;
 
     dcl-s DSC_ERROR   varChar(200);
+    dcl-s P_Tarjeta   Char(19);
 
     P_codigo_origen ='BINTE';
     MONITOR;
@@ -333,11 +333,32 @@
       EndIf;
 
       Z += 1;
+
+      Wtarjeta = %Editc(dsAMABINDET.CREDIT_CARD_NUMBER:'X');
+
+      P_Tarjeta = ' ';
+      If %Subst(Wtarjeta:1:2) = '00';
+         %SubSt(P_Tarjeta:1:14) = %Subst(Wtarjeta:3:14);
+      Else;  
+         %SubSt(P_Tarjeta:1:16) = Wtarjeta;
+      Endif;  
+
+      If Not PCISRV_MaskPan(P_Tarjeta);
+        dsRecord(Z).Num_Tarjeta = %Editc(dsAMABINDET.CREDIT_CARD_NUMBER:'X');
+      else;
+        dsRecord(Z).Num_Tarjeta = %Trim(P_Tarjeta);
+      Endif;  
+
       dsRecord(Z).Cod_File    = dsAMADEUS_Files.ID;
-      dsRecord(Z).Num_Tarjeta = %Editc(dsAMABINDET.CREDIT_CARD_NUMBER:'X');
+      
       dsRecord(Z).NamePassg   = dsAMABINDET.PASSENGER_NAME;
       dsRecord(Z).DocNumber   = dsAMABINDET.DOCUMENT_NUMBER;
-      dsRecord(Z).Importe     = dsAMABINDET.DEBIT_CREDIT_AMOUNT;
+      dsRecord(Z).Txn_Code    = dsAMABINDET.ID_DEBIT_CREDIT_CODE;
+      If dsAMABINDET.ID_DEBIT_CREDIT_CODE = '22';
+        dsRecord(Z).Importe     = dsAMABINDET.DEBIT_CREDIT_AMOUNT * (-1);
+      Else;
+        dsRecord(Z).Importe     = dsAMABINDET.DEBIT_CREDIT_AMOUNT;
+      EndIf;
 
       ErrorRecord = '';
       If Not Validar_Record(ErrorRecord);
@@ -364,10 +385,18 @@
       Else;
         dsFiles_Proc(I_Fil).Tot_Proc += dsAMABINDET.DEBIT_CREDIT_AMOUNT;
 
-        p_numero_operacion =
+      Wcontador += 1;
+      Wnumref   += 1;
+
+      // Aqui la logica para los NMOV
+      Reset dsNMOV;
+      Llena_Campos_NMOV();
+      Graba_datos_adicionales();
+      p_numero_operacion =
         GRABA_ADQUIRENCIA_PROPIA(
           P_id_fichero:
-          P_codigo_origen :dsNMOV) ;
+          P_codigo_origen :dsNMOV);
+          Genera_DescrFac();
 
         // Actualizacion del Registro con el numero de operacion
         if Not Actualiza_Record_Detail(1:ErrorRecord:p_numero_operacion);
@@ -375,13 +404,6 @@
            Iter;
         EndIf;
       EndIf;
-
-      Wcontador += 1;
-      Wnumref   += 1;
-
-      // Aqui la logica para los NMOV
-      Reset dsNMOV;
-      Llena_Campos_NMOV();
 
     enddo;
 
@@ -423,41 +445,17 @@
       ErrorRecord     char(7);
     end-pi;
 
-    Dcl-s Wsocio        Zoned(8);
-    Dcl-s WExiste_Tarj  Ind Inz(*Off);
-
-    // Wsocio  = %Dec(%Subst(dsAMABINDET.CREDITCARDNUMBER:3:8):8:0);
-
-    // Exec Sql
-    //   Select
-    //     '1'
-    //   Into :WExiste_Tarj
-    //   From T_MSOCIO
-    //   Where NUREAL = :Wsocio;
-
-    // If SqlCode < 0;
-    //   observacionSql = 'Error en lectura de T_MSOCIO. ' +
-    //                    'Numero Tarjeta: ' + 
-    //                    %Trim(dsAMABINDET.CREDIT_CARD_NUMBER);
-    //   Clear Nivel_Alerta;
-    //   Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-    //   If Nivel_Alerta = 'HI';
-    //     *InH1 = *On;
-    //     *InLR = *On;
-    //     Return *Off;
-    //   EndIf;
-    //   Return *Off;
-    // EndIf;
-
-    // If SqlCode = 100;
-    //   observacionSql = 'Tarjeta no existente en T_MSOCIO. ' +
-    //                    'Numero Tarjeta: ' + 
-    //                    %Trim(dsAMABINDET.CREDIT_CARD_NUMBER);
-    //   Clear Nivel_Alerta;
-    //   Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-    //   ErrorRecord = 'BIN0001';
-    //   Return *Off;
-    // EndIf;
+    Dcl-s WPais_Bin     Zoned(3);
+    Dcl-s WStatus       Packed(1);
+    dcl-s Wexiste_Estab Ind Inz(*Off);
+    dcl-s Wexiste_Bin   Ind Inz(*Off);
+    dcl-s Wexiste_Tarj  Ind Inz(*Off);
+    dcl-s Wtarj_8       Char(8);
+    dcl-s Wtarj_6       Char(6);
+    dcl-s WPAN          Char(50);
+    dcl-s WDC_Ent       Char(1);
+    dcl-s WDC_Cal       Char(1);
+    Dcl-s Wfec_Baj_Est  Zoned(6);
 
     // Se valida que no sea Moneda diferente a EUR
     If dsAMABINDET.CURRENCY_CODE<>'EUR';
@@ -466,42 +464,148 @@
       Return *Off;
     EndIf;
 
+    WNumEstab = 0;
+
+    // Se valida el FUC y el codigo de Establecimiento
+    Exec Sql
+      SELECT FNEPAG 
+      Into :WNumEstab
+      FROM PRICEFUC
+      Where
+        FNUFUC <> ' '
+        AND dec(FNUFUC, 9, 0) = :dsAMABINDET.MERCHANT_NUMBER;
+
+    If Sqlcode < 0;
+      observacionSql = 'Error en lectura de PRICEFUC para FUC ' +
+                       %Char(dsAMABINDET.MERCHANT_NUMBER);
+      Clear Nivel_Alerta;
+      Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
+      If Nivel_Alerta = 'HI';
+        *InH1 = *On;
+        *InLR = *On;
+        Return *Off;
+      EndIf;
+      Return *Off;
+    EndIf;
+
+    If Sqlcode = 100;
+      // Error FUC no valido
+      ErrorRecord = 'BIN0003';
+      Return *Off;
+    EndIf;
+
+    // Se valida codigo de Establecimiento
+    Exec Sql
+      Select '1', EFBAJA
+      Into :Wexiste_Estab, :Wfec_Baj_Est    
+      From ESTA1
+      Where NUMEST = :WNumEstab;
+
+    If SqlCode <> 0;
+      // Error Codigo de Establecimiento no valido
+      ErrorRecord = 'BIN0004';
+      Return *Off;
+    EndIf;
+
+    If Wfec_Baj_Est <> 0;
+      // Error Codigo de Establecimiento esta dado de baja
+      ErrorRecord = 'BIN0010';
+      Return *Off;
+    EndIf;
+
+    // validación del BIN de la tarjeta
+    Wtarj_6  = %Subst(%Editc(dsAMABINDET.CREDIT_CARD_NUMBER:'X'):3:6);
+    Wtarj_8  = %Subst(%Editc(dsAMABINDET.CREDIT_CARD_NUMBER:'X'):1:8);
+
+    // Se busca BIN de 6 digitos
+    Wexiste_Bin = *Off;
+    Exec Sql
+      Select '1', PAIS_RECAP
+      Into :Wexiste_Bin, :WPais_Bin
+      From BINES
+      Where BINES_DOCHOC = :Wtarj_6;
+
+    If Not Wexiste_Bin oR SqlCode = 100;
+      // Se busca BIN de 8 digitos
+      Wexiste_Bin = *Off;
+      Exec Sql
+        Select '1', PAIS_RECAP
+        Into :Wexiste_Bin, :WPais_Bin
+        From BINES
+        Where BINES_DOCHOC = :Wtarj_8;
+
+      If SqlCode = 0 Or Not Wexiste_Bin;
+        // Error BIN no valido
+        ErrorRecord = 'BIN0005';
+        Return *Off;
+      EndIf;
+    EndIf;
+
+    // Validación del Digito Verificador
+    // Tarjeta de 14 Digitos
+    WTarj_Si_14 = *Off;
+    If %Subst(Wtarjeta:1:2) = '00';
+      WTarj_Si_14 = *On;
+      WPAN = %Subst(Wtarjeta:3:13);
+      WDC_Cal = cryGe_getValidDigit(%trim(WPAN));
+      WDC_Ent = %Subst(Wtarjeta:15:1);
+      Wsocio  = %Dec(%Subst(
+        %Editc(dsAMABINDET.CREDIT_CARD_NUMBER:'X')
+            :5:8):8:0);
+    Else;
+      // Tarjeta de 16 Digitos
+      WDC_Cal = cryGe_getValidDigit(%trim(Wtarjeta));
+      Wsocio  = %Dec(%Subst(
+        %Editc(dsAMABINDET.CREDIT_CARD_NUMBER:'X')
+            :3:8):8:0);
+    Endif;    
+
+    If WDC_Cal <> %Subst(Wtarjeta:16:1);
+      // Error BIN no valido
+      ErrorRecord = 'BIN0006';
+      Return *Off;
+    Endif;
+
+    // Si es Tarjeta Propia
+    If WPais_Bin = 999;
+      // Se valida Si existe en CARDVAULT
+      Exec Sql
+        Select '1'
+        Into :Wexiste_Tarj    
+        From Atrium.CARDVAULT
+        Where Trim(V_PAN) = Trim(Char(:dsAMABINDET.CREDIT_CARD_NUMBER))
+        Limit 1;
+
+      If SqlCode <> 0;
+        // Error Tarjeta no existe en CARDVAULT
+        ErrorRecord = 'BIN0007';
+        Return *Off;
+      EndIf;      
+
+      // Se valida tarjeta en el MSOCIO
+      Exec Sql
+        Select '1', Status
+        Into :Wexiste_Tarj, :WStatus    
+        From T_MSOCIO
+        Where NUREAL = :Wsocio;
+
+      If SqlCode = 100 Or Not Wexiste_Tarj;
+        // Error Tarjeta Propia no existe en MSOCIO
+        ErrorRecord = 'BIN0008';
+        Return *Off;
+      EndIf;      
+
+      If Wexiste_Tarj and WStatus <> 0;
+        // Error Tarjeta Propia esta Inactiva
+        ErrorRecord = 'BIN0009';
+        Return *Off;
+      EndIf;      
+
+    EndIf;
+
     Return *On;
 
   end-proc;
-  // //-----------------------------------------------------------------
-  // // Actualiza Registro AMADEUS_BINTER_INVOICE_FILES
-  // //-----------------------------------------------------------------
-  // dcl-proc Actualiza_Record_File;
-
-  //   dcl-pi *n Ind;
-  //     Cod_Proc  Zoned(2) Const;
-  //   end-pi;
-
-  //   Exec Sql
-  //     Update AMADEUS_BINTER_INVOICE_FILES
-  //     Set
-  //       PROCESSED = :Cod_Proc,
-  //       UPDATE_DATE = current timestamp
-  //     Where
-  //       ID = :dsAMADEUS_Files.ID
-  //   ;
-
-  //   If Sqlcode < 0;
-  //     observacionSql = 'Error en el Update del AMADEUS_BINTER_INVOICE_FILES';
-  //     Clear Nivel_Alerta;
-  //     Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-  //     If Nivel_Alerta = 'HI';
-  //       *InH1 = *On;
-  //       *InLR = *On;
-  //       Return *Off;
-  //     EndIf;
-  //     Return *Off;
-  //   EndIf;
-
-  //   Return *On;
-
-  // end-proc;
   //-----------------------------------------------------------------
   // Actualiza Registro
   //-----------------------------------------------------------------
@@ -548,7 +652,6 @@
     end-pi;
 
     Dcl-s WCodAct       Char(2);
-    Dcl-s Wsocio        Zoned(8);
     Dcl-s Wciclo        Zoned(6);
     Dcl-s WPais         packed(3:0);
     Dcl-s WSDUPEX       Char(1);
@@ -563,9 +666,9 @@
     // determina Tarjeta y numero de SOCIO
     Wsocio  = %Dec(%Subst(
         %Editc(dsAMABINDET.CREDIT_CARD_NUMBER:'X')
-              :3:8):8:0);
+              :5:8):8:0);
     Wciclo  = %Dec(%Subst(%Editc(dsAMABINDET.CREDIT_CARD_NUMBER:'X')
-              :2:6):6:0);
+              :3:6):6:0);
 
     Exec Sql
       SELECT CPAIRE
@@ -580,13 +683,13 @@
     EndIf;
 
     dsNMOV.VCPO2  = 'N ';
-    If dsAMABINDET.ID_DEBIT_CREDIT_CODE = '22';
+    If dsAMABINDET.ID_DEBIT_CREDIT_CODE = '11';
       dsNMOV.VNEGAT = '0';
     Else;
       dsNMOV.VNEGAT = '1';
     EndIf;
 
-    dsNMOV.VLIBR1 = '  611';
+    dsNMOV.VLIBR1 = '  61 ';
 
     Exec Sql
       Select Digits(EACTPR), EDIG
@@ -616,16 +719,16 @@
       WSPLAST = ' ';
       dsNMOV.VLIBR1 = %REPLACE('V':dsNMOV.VLIBR1:1:1);
     ENDIF;
-    IF dsAMABINDET.ID_DEBIT_CREDIT_CODE <> '11';
-      dsNMOV.VLIBR1 = %REPLACE('2':dsNMOV.VLIBR1:5:1);
-    ENDIF;
+    // IF dsAMABINDET.ID_DEBIT_CREDIT_CODE <> '11';
+    //   dsNMOV.VLIBR1 = %REPLACE('2':dsNMOV.VLIBR1:5:1);
+    // ENDIF;
 
     dsNMOV.VNESTA = WNumEstab;
     dsNMOV.VDIGIT = WDIGEST;
     dsNMOV.VDUPLI = DUPLIC;
     dsNMOV.VCODRE = '7';
     dsNMOV.VNUSO  = 0;
-    dsNMOV.VADICI = ' '; // veirificar que otros valores
+    dsNMOV.VADICI = '1'; 
     dsNMOV.VIMPOR = %Int(dsAMABINDET.DEBIT_CREDIT_AMOUNT * 100);
     If dsAMABINDET.ID_DEBIT_CREDIT_CODE = '22';
       dsNMOV.VIMPOR = dsNMOV.VIMPOR * (-1);
@@ -642,7 +745,7 @@
     dsNMOV.VCPO3  = '';
     dsNMOV.VNUREG = Wcontador;
     dsNMOV.VCPO7  = '';
-    dsNMOV.VNEST1 = WNumEstab;  //TRANSAC.GENUCOPV
+    dsNMOV.VNEST1 = WNumEstab;  
     dsNMOV.VCPO7X = '';
     dsNMOV.VPTLLA = 'Z';
     dsNMOV.VCPO77 = '';
@@ -655,7 +758,7 @@
     dsNMOV.VNUPRO = 0;
     dsNMOV.VTIPRO = '';
     dsNMOV.VMOTVO = '';
-    dsNMOV.VNUMTF = %Trim(dsAMABINDET.APPROVAL_CODE); //Codigo de Aprobacion
+    dsNMOV.VNUMTF = %Subst(dsAMABINDET.APPROVAL_CODE:2:5); //Codigo de Aprobacion
     dsNMOV.VNUBIL = dsAMABINDET.DOCUMENT_NUMBER; // Numero de Billete
     dsNMOV.VMONED = '0';
     dsNMOV.VNOPRE = '';
@@ -700,14 +803,10 @@
       Insert Into QTEMP.BIN_REG_PROCESS VALUES(:WReg) ;
 
     Wreg =
-      'CODIGO FICHERO;NUMERO DE TARJETA;NOMBRE DEL PASAJERO;NUMERO DE DOCUMENTO;IMPORTE;' +
-      'CODIGO ERROR;DESCRIPCION ERROR';
+      'CODIGO FICHERO;NUMERO DE TARJETA;NOMBRE DEL PASAJERO;NUMERO DE DOCUMENTO;'+
+      'CODIGO TRANSACCION; IMPORTE;CODIGO ERROR;DESCRIPCION ERROR';
     Exec Sql
         Insert Into QTEMP.BIN_REG_PROCESS VALUES(:WReg) ;
-
-    // Wreg = ' ';
-    // Exec Sql
-    //   Insert Into QTEMP.BIN_REG_PROCESS VALUES(:WReg) ;
 
     For I = 1 to Z;
       Wreg =
@@ -715,6 +814,7 @@
         %Trim(dsRecord(I).Num_Tarjeta)        + ';' +
         %Trim(dsRecord(I).NamePassg)          + ';' +
         %Trim(dsRecord(I).DocNumber)          + ';' +
+        %Trim(dsRecord(I).Txn_Code)           + ';' +
         %Editc(dsRecord(I).Importe:'2')       + ';' +
         %trim(dsRecord(I).Cod_Error)          + ';' +
         %Trim(dsRecord(I).Dsc_Error);
@@ -769,11 +869,16 @@
 
     For I = 1 to I_Fil;
       StrData = %Trim(StrData) + '<tr>' +
-      '<td style="text-align: center;">' + %Char(dsFiles_Proc(I).Cod_File)            + '</td>' +
-      '<td style="text-align: left;">' + %Trim(dsFiles_Proc(I).Dsc_File)              + '</td>' +
-      '<td style="text-align: right;">' + %Editc(dsFiles_Proc(I).Tot_Proc:'2') + Euro + '</td>' +
-      '<td style="text-align: right;">' + %Editc(dsFiles_Proc(I).Tot_Rec:'2')  + Euro + '</td>' +
-      '<td style="text-align: center;">' + %Editc(dsFiles_Proc(I).Can_Rec:'2')        + '</td>' +
+      '<td style="padding:10px 8px; border:1px solid #d9d9d9;">' + 
+            %Char(dsFiles_Proc(I).Cod_File)            + '</td>'   +
+      '<td style="padding:10px 8px; border:1px solid #d9d9d9;">' + 
+            %Trim(dsFiles_Proc(I).Dsc_File)              + '</td>' +
+      '<td style="padding:10px 8px; border:1px solid #d9d9d9; text-align:right;">' + 
+            %Editc(dsFiles_Proc(I).Tot_Proc:'2') + Euro + '</td>'  +
+      '<td style="padding:10px 8px; border:1px solid #d9d9d9; text-align:right;">' + 
+            %Editc(dsFiles_Proc(I).Tot_Rec:'2')  + Euro + '</td>'  +
+      '<td style="padding:10px 8px; border:1px solid #d9d9d9; text-align:right;">' + 
+            %Editc(dsFiles_Proc(I).Can_Rec:'2')        + '</td>'   +
       '</tr>';
     EndFor;
 
@@ -951,3 +1056,146 @@
 
     Return *On;
   end-proc;
+  // ********************************************************************
+  // Graba_datos_adicionales
+  // ********************************************************************
+  dcl-proc Graba_datos_adicionales;
+
+    EXEC Sql
+      INSERT INTO OPERACIONES_LIQUIDACION_DATOS_ADICIONALES
+        (NUMERO_OPERACION, AUT_NUMERO_AUTORIZACION, REFERENCIA_CREACION,
+        FLQ_NUMERO_FACTURA_PROVEEDOR,  REF_ESTA,
+        FLQ_NUMERO_BILLETE_PROVEEDOR,  FLQ_REFERENCIA_COMERCIO)
+        values(-1, :dsAMABINDET.APPROVAL_CODE  ,
+        :Wnumref,
+        :dsAMABINDET.INVOICE_NUMBER , :dsAMABINDET.DOCUMENT_NUMBER,
+        :dsAMABINDET.DOCUMENT_NUMBER, :dsAMABINDET.DOCUMENT_NUMBER) ;
+
+  end-proc;
+  // ********************************************************************
+  // Genera_DescrFac
+  // ********************************************************************
+  dcl-proc Genera_DescrFac;
+
+    dcl-pi *n;
+    end-pi;
+
+  dcl-s wnombre varchar(100);
+  dcl-s wagente zoned(9);
+  dcl-s wcodcia char(2);
+  dcl-c C_ESPFEE  CONST('SERVICE FEE N.BILL: ');
+  dcl-ds DsDescrFac qualified ;
+    gkey packed(9);
+    gpais zoned(3);
+    glibr1 char(1);
+    gpurge packed(9);
+    grefin char(8);
+    glin1 char(59);
+    glin2 char(59);
+    gnomes char(32);
+    gloces char(26);
+    gdesch char(40);
+    gnumso packed(8);
+    gcinta char(150);
+    grefus char(15);
+    gisoma char(15);
+    glin3 char(59);
+    gactin zoned(3);
+  end-ds;
+
+    DsDescrFac.gkey = Wnumref;
+    DsDescrFac.gpais = dsNMOV.VPAIS;
+    DsDescrFac.glibr1 = '';
+    DsDescrFac.gpurge =  %DEC(%DATE():*ISO);
+    DsDescrFac.grefin = '';
+    If  DsDescrFac.gpais= 999;
+      clear wnombre;
+     //recupera nombre de agente
+     wagente =  %Dec((dsAMABINDET.agent_iata_code):9:0);
+     exec sql
+      select RDESCR
+       INTO :WNombre
+      from iata
+       where Rkey = :wagente;
+       // si no existe nombre establecimiento
+       if sqlcode <> 0 ;
+       exec sql
+        select  ENOMBR
+         into :Wnombre
+         From ESTA1
+         Where NUMEST = :dsNMOV.VNESTA;
+        endif;
+      clear wcodcia;
+        exec sql
+        select BIDCIA
+        into :wcodcia
+        from  BSPCIAS
+        where bnucia=:dsAMABINDET.AIRLINE_CODE;
+
+
+      DsDescrFac.glin1=wnombre;
+      DsDescrFac.glin2=dsAMABINDET.agent_iata_code+'/'+
+      wcodcia+dsAMABINDET.document_number+'-'+
+      dsAMABINDET.invoice_number;
+      DsDescrFac.glin3=dsAMABINDET.PASSENGER_NAME;
+       DsDescrFac.gcinta='';
+    else;
+      DsDescrFac.glin1='';
+      DsDescrFac.glin2='';
+      DsDescrFac.glin3='';
+      // Contruye campo para interchain concetando otros campos
+      DsDescrFac.gcinta='';
+       // Compañia 3 primeras posiciones
+      if dsAMABINDET.AIRLINE_CODE <>'';
+        %subst(DsDescrFac.gcinta:1:3) =
+        dsAMABINDET.AIRLINE_CODE;
+      else;
+       %subst(DsDescrFac.gcinta:1:3) = '000';
+      endif;
+      if dsAMABINDET.DOCUMENT_NUMBER <>'';
+        %subst(DsDescrFac.gcinta:4:10) =
+         dsAMABINDET.DOCUMENT_NUMBER;
+      endif;
+       %subst(DsDescrFac.gcinta:14:1) = '0';
+      if dsAMABINDET.CITY_NAME_1  <>'';
+        %subst(DsDescrFac.gcinta:15:3) =
+          dsAMABINDET.CITY_NAME_1 ;
+      endif;
+      if dsAMABINDET.CITY_NAME_2  <>'';
+        %subst(DsDescrFac.gcinta:18:3) =
+         dsAMABINDET.CITY_NAME_2 ;
+      endif;
+      if dsAMABINDET.CITY_NAME_3  <>'';
+        %subst(DsDescrFac.gcinta:21:3) =
+        dsAMABINDET.CITY_NAME_3 ;
+      endif;
+      if dsAMABINDET.CITY_NAME_4  <>'';
+        %subst(DsDescrFac.gcinta:24:3) =
+         dsAMABINDET.CITY_NAME_4;
+      endif;
+      if dsAMABINDET.CITY_NAME_5  <>'';
+        %subst(DsDescrFac.gcinta:27:3) =
+         dsAMABINDET.CITY_NAME_5 ;
+      endif;
+      if dsAMABINDET.PASSENGER_NAME   <>'';
+        %subst(DsDescrFac.gcinta:78:25) =
+         dsAMABINDET.PASSENGER_NAME  ;
+      endif;
+
+    endif;
+    DsDescrFac.gloces='';
+    DsDescrFac.gnomes='';
+    DsDescrFac.gdesch=''; //factura para microficha
+    DsDescrFac.gnumso= Wsocio;
+    DsDescrFac.grefus='';
+    DsDescrFac.gisoma=dsAMABINDET.document_number;
+    DsDescrFac.gactin=500;//????????????????
+
+    exec sql
+    INSERT INTO FICHEROS.DESCRFAC (
+      GKEY, GPAIS,  GLIBR1,  GPURGE,  GREFIN,  GLIN1,
+      GLIN2, GNOMES, GLOCES,  GDESCH,  GNUMSO,  GCINTA,
+      GREFUS,  GISOMA,  GLIN3,  GACTIN )
+    VALUES :DsDescrFac;
+
+  end-proc;  

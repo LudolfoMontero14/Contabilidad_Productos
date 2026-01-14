@@ -29,9 +29,9 @@
   ctl-opt decedit('0,') datedit(*dmy.)
     option(*srcstmt : *nodebugio : *noexpdds) nomain;
 
-  /copy QRPGLESRC/CONTABSRVH
-  /copy QRPGLESRC/PSDSCP         // psds
-  /Include QRPGLESRC/SQLDIAGNCP  // Errores diagnostico SQL
+  /copy Explota/QRPGLESRC,CONTABSRVH
+  /copy Utilities/QRPGLESRC,PSDSCP         // psds
+  /Include Utilities/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
 
   //---------------------------------------------------------------
   // Guardar Evidencias Contables - Cabecera
@@ -55,34 +55,7 @@
       %Trim(in_NomCabpar)                                  +
       ' (CDESCR, CNUAPU, CFEALT, CFEBAJ, CNUEVI, CIDMOD) ' +
       'VALUES(?,?,?,?,?,?)';
-    // SqlStr = 
-    //   'INSERT INTO '                                       +
-    //   %Trim(in_NomCabpar)                                  +
-    //   ' (CDESCR, CNUAPU, CFEALT, CFEBAJ, CNUEVI, CIDMOD) ' +
-    //   'VALUES('                                            +
-    //   WComi + %trim(in_dsCabevi.descripcion) + WComi + ',' +
-    //   WComi + in_dsCabevi.numeroApunte       + WComi + ', '+
-    //   %Editc(in_dsCabevi.fechaConciliacion:'X')      + ', '+
-    //   %char(in_dsCabevi.fechaBaja)                   + ',' +
-    //   WComi + in_dsCabevi.numeroEvidencia    + WComi + ',' +
-    //   WComi + in_dsCabevi.pteModificar + WComi + ')';
 
-    // Exec Sql
-    //   INSERT INTO FICHEROS.CABEVI (CDESCR,
-    //                                CNUAPU,
-    //                                CFEALT,
-    //                                CFEBAJ,
-    //                                CNUEVI,
-    //                                CIDMOD)
-    //                 VALUES(:in_dsCabevi.descripcion,
-    //                        :in_dsCabevi.numeroApunte,
-    //                        :in_dsCabevi.fechaConciliacion,
-    //                        :in_dsCabevi.fechaBaja,
-    //                        :in_dsCabevi.numeroEvidencia,
-    //                        :in_dsCabevi.pteModificar);
-
-    // Exec Sql
-    //     Execute Immediate :SqlStr;
     exec sql prepare SZ from :SqlStr;
     exec sql execute SZ using 
         :in_dsCabevi.descripcion,
@@ -191,7 +164,8 @@
       EndIf;
 
     On-Error;
-      out_sqlMensaje = 'Error Monitorizado. CONTABSRV_Crear_Fichero_Detalle_Evidencia_Temporal';
+      out_sqlMensaje = 
+      'Error Monitorizado. CONTABSRV_Crear_Fichero_Detalle_Evidencia_Temporal';
       return *off;
     EndMon;
 
@@ -233,7 +207,8 @@
       EndIf;
 
     On-Error;
-      out_sqlMensaje = 'Error Monitorizado. CONTABSRV_Grabar_Detalle_Evidencia_Temporal';
+      out_sqlMensaje = 
+        'Error Monitorizado. CONTABSRV_Grabar_Detalle_Evidencia_Temporal';
       return *off;
     EndMon;
 
@@ -272,7 +247,8 @@
       EndIf;
 
     On-Error;
-      out_sqlMensaje = 'Error Monitorizado. CONTABSRV_Grabar_Detalles_Evidencias';
+      out_sqlMensaje = 
+        'Error Monitorizado. CONTABSRV_Grabar_Detalles_Evidencias';
       return *off;
     EndMon;
 
@@ -304,11 +280,6 @@
       '   AND CFEALT = ' + %Editc(in_dsCabevi.fechaConciliacion:'X') +
       '   AND CNUEVI = ' + in_dsCabevi.numeroEvidencia;
 
-    // Exec Sql
-    //   DELETE FROM FICHEROS.CABEVI
-    //   WHERE CNUAPU = :in_dsCabevi.numeroApunte
-    //     AND CFEALT = :in_dsCabevi.fechaConciliacion
-    //     AND CNUEVI = :in_dsCabevi.numeroEvidencia;
 
     Monitor;
       Exec Sql
@@ -322,7 +293,8 @@
       EndIf;
 
     On-Error;
-      out_sqlMensaje = 'Error Monitorizado. CONTABSRV_Borrar_Evidencias_Contables_Cabecera';
+      out_sqlMensaje = 
+        'Error Monitorizado. CONTABSRV_Borrar_Evidencias_Contables_Cabecera';
       return *off;
     EndMon;
 
@@ -332,8 +304,8 @@
 
   //---------------------------------------------------------------
   // Obtener Datos de Asiento
-  //
-  // Si está informado dsKeyAsiento lo uso para cargar dsDatosAsientoParametrizables
+  // Si está informado dsKeyAsiento lo uso para cargar 
+  // dsDatosAsientoParametrizables
   // Si no está informado dsKeyAsiento uso dsDatosAsientoParametrizables
   //---------------------------------------------------------------
   dcl-proc CONTABSRV_Obtener_Datos_Asiento export;
@@ -341,12 +313,14 @@
     dcl-pi *n ind;
       dsKeyAsiento likeds(dsKeyAsientoTpl);
       dsDatosAsientoParametrizables likeds(dsDatosAsientoParametrizablesTpl);
-      dsDatosAsientoNoParametrizables likeds(dsDatosAsientoNoParametrizablesTpl);
+      dsDatosAsientoNoParametrizables 
+          likeds(dsDatosAsientoNoParametrizablesTpl);
       dsAsifilen likeds(dsAsifilenTpl);
       textoError char(100);
     end-pi;
 
-    dcl-ds dsDatosAsientoParametrizablesSinDato likeds(dsDatosAsientoNoParametrizablesTpl) inz;
+    dcl-ds dsDatosAsientoParametrizablesSinDato 
+           likeds(dsDatosAsientoNoParametrizablesTpl) inz;
 
     exsr ValidacionesDatosAsiento;
     if textoError <> *blanks;
@@ -371,7 +345,8 @@
     dsAsifilen.ctipro = dsDatosAsientoParametrizables.tipoProcedencia;
     dsAsifilen.cctana = dsDatosAsientoParametrizables.cuentaNavision;
     dsAsifilen.ccodma = dsDatosAsientoParametrizables.codigoMayor;
-    dsAsifilen.crefde = dsDatosAsientoParametrizables.referenciaDocumentoExterna;
+    dsAsifilen.crefde = 
+               dsDatosAsientoParametrizables.referenciaDocumentoExterna;
     dsAsifilen.cddept = dsDatosAsientoParametrizables.dimensionDepartamento;
     dsAsifilen.cdanlt = dsDatosAsientoParametrizables.dimensionConcepto;
     dsAsifilen.cdeban = dsDatosAsientoParametrizables.dimensionJerarquia;
@@ -393,7 +368,8 @@
       if textoError = *blanks and (dsKeyAsiento.idAsiento <= 0
           or dsKeyAsiento.ordenApunte <= 0
           or dsKeyAsiento.codProducto <= 0)
-          and (dsDatosAsientoNoParametrizables = dsDatosAsientoParametrizablesSinDato);
+          and (dsDatosAsientoNoParametrizables = 
+              dsDatosAsientoParametrizablesSinDato);
         textoError = 'No enviados ni clave ni datos parametrizados de asiento';
       endif;
 
@@ -405,15 +381,18 @@
             parametrizados de asiento';
       endif;
 
-      if textoError = *blanks and (dsDatosAsientoParametrizables.proceso = *blanks
+      if textoError = *blanks and 
+          (dsDatosAsientoParametrizables.proceso = *blanks
           or dsDatosAsientoParametrizables.descripcionAsiento = *blanks
           or dsDatosAsientoParametrizables.tipoProcedencia = *blanks
           //or dsDatosAsientoParametrizables.cuentaNavision = *blanks
           or dsDatosAsientoParametrizables.codigoMayor = *blanks);
-        textoError = 'Faltan algunos campos clave de datos parametrizados del asiento';
+        textoError = 
+            'Faltan algunos campos clave de datos parametrizados del asiento';
       endif;
 
-      if textoError = *blanks and dsDatosAsientoNoParametrizables.numApunte = *blanks;
+      if textoError = *blanks and 
+         dsDatosAsientoNoParametrizables.numApunte = *blanks;
         textoError = 'Número de apunte no enviado';
       endif;
 
@@ -443,7 +422,8 @@
       endif;
 
       // Opcional pero si se envía debe ser correcta
-      if textoError = *blanks and dsDatosAsientoNoParametrizables.fechaVencimiento <> 0;
+      if textoError = *blanks and 
+         dsDatosAsientoNoParametrizables.fechaVencimiento <> 0;
         test(de) *eur dsDatosAsientoNoParametrizables.fechaVencimiento;
         if (%error);
           textoError = 'Fecha vencimiento enviada erronea. ' +
@@ -483,11 +463,13 @@
     endif;
 
     Exec Sql
-      SELECT PROCESO, DESCRIPCION_ASIENTO, TIPO_PROCEDENCIA, CUENTA_NAVISION, CODIGO_MAYOR,
-             CUENTA_MAYOR, FICHERO_ASOCIADO, CUENTA_AUXILIAR, CODIGO_CONCEPTO, TEXTO_CONCEPTO,
-             REFERENCIA_DOCUMENTO_EXTERNA, DIMENSION_DEPARTAMENTO, DIMENSION_CONCEPTO,
-             DIMENSION_JERARQUIA, DIMENSION_GASTOS, DIMENSION_PRODUCTO, DIMENSION_LIBRE1,
-             DIMENSION_LIBRE2, DIMENSION_LIBRE3
+      SELECT 
+        PROCESO, DESCRIPCION_ASIENTO, TIPO_PROCEDENCIA, CUENTA_NAVISION, 
+        CODIGO_MAYOR, CUENTA_MAYOR, FICHERO_ASOCIADO, CUENTA_AUXILIAR, 
+        CODIGO_CONCEPTO, TEXTO_CONCEPTO, REFERENCIA_DOCUMENTO_EXTERNA, 
+        DIMENSION_DEPARTAMENTO, DIMENSION_CONCEPTO, DIMENSION_JERARQUIA, 
+        DIMENSION_GASTOS, DIMENSION_PRODUCTO, DIMENSION_LIBRE1,
+        DIMENSION_LIBRE2, DIMENSION_LIBRE3
       into :dsDatosAsientoParametrizables
       FROM FICHEROS.ASIENTOS_CUENTAS_POR_PRODUCTO
       WHERE ID_ASIENTO = :dsKeyAsiento.idAsiento
@@ -523,54 +505,7 @@
       'VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
     ;    
 
-    // SqlStr = 
-    //   'INSERT INTO '                                               +
-    //   P_NomAsiPar                                                  +
-    //   ' (CAPUNT, CCTAMA, CCTAFI, CCTAAU, CCODIG, CPROGR, '         +
-    //     'CFECON, CDEHA, CREFOP, CFEVTO, CCONCE, CIMPOR, '          +
-    //     'CMONED, CPROVI, CTIPOP, CTIPRO, CCTANA, CCODMA, '         +
-    //     'CREFDE, CDDEPT, CDANLT, CDEBAN, CDPERS, CDGFIN, '         +
-    //     'CDIM06, CDIM07, CDIM08) '                                 +
-    //   'VALUES(' + 
-    //       WComi + dsAsifilen.capunt + WComi + ',' +
-    //       WComi + dsAsifilen.cctama + WComi + ',' +
-    //       WComi + dsAsifilen.cctafi + WComi + ',' +
-    //       WComi + dsAsifilen.cctaau + WComi + ', ' +
-    //       %Char(dsAsifilen.ccodig)          + ',' +
-    //       WComi + dsAsifilen.cprogr + WComi + ',' +
-    //       %Editc(dsAsifilen.cfecon:'X')     + ',' +
-    //       WComi + dsAsifilen.cdeha  + WComi + ',' +
-    //       WComi + dsAsifilen.crefop + WComi + ',' +
-    //       %Editc(dsAsifilen.cfevto:'X')     + ',' +
-    //       WComi + dsAsifilen.cconce + WComi + ',' +
-    //       %Trim(%Editw(dsAsifilen.cimpor:'           .   ')) + ',' +
-    //       WComi + dsAsifilen.cmoned + WComi + ',' +
-    //       WComi + dsAsifilen.cprovi + WComi + ', ' +
-    //       %Char(dsAsifilen.ctipop)          + ',' +
-    //       WComi + dsAsifilen.ctipro + WComi + ',' +
-    //       WComi + dsAsifilen.cctana + WComi + ',' +
-    //       WComi + dsAsifilen.ccodma + WComi + ',' +
-    //       WComi + dsAsifilen.crefde + WComi + ',' +
-    //       WComi + dsAsifilen.cddept + WComi + ',' +
-    //       WComi + dsAsifilen.cdanlt + WComi + ',' +
-    //       WComi + dsAsifilen.cdeban + WComi + ',' +
-    //       WComi + dsAsifilen.cdpers + WComi + ',' +
-    //       WComi + dsAsifilen.cdgfin + WComi + ',' +
-    //       WComi + dsAsifilen.cdim06 + WComi + ',' +
-    //       WComi + dsAsifilen.cdim07 + WComi + ',' +
-    //       WComi + dsAsifilen.cdim08 + WComi + ')';
-
-    // Exec Sql
-    //   INSERT INTO FICHEROS.ASIFILEN
-    //                   (CAPUNT, CCTAMA, CCTAFI, CCTAAU, CCODIG, CPROGR,
-    //                   CFECON, CDEHA, CREFOP, CFEVTO, CCONCE, CIMPOR,
-    //                   CMONED, CPROVI, CTIPOP, CTIPRO, CCTANA, CCODMA,
-    //                   CREFDE, CDDEPT, CDANLT, CDEBAN, CDPERS, CDGFIN,
-    //                   CDIM06, CDIM07, CDIM08)
-    //           VALUES (:dsAsifilen);
-
     exec sql prepare SX from :SqlStr;
-
 
     Monitor;
       exec sql execute SX using 
@@ -620,9 +555,9 @@
 
   end-proc;
 
-  //-----------------------------------------------------------------------------
+  //-------------------------------------------------------
   // Asignar número de apunte
-  //-----------------------------------------------------------------------------
+  //-------------------------------------------------------
   dcl-proc CONTABSRV_Asignar_Numero_Apunte export;
 
     dcl-pi *n char(6);
@@ -724,9 +659,9 @@
     EndFor;
 
   end-proc;
-  //-----------------------------------------------------------------------------
+  //-----------------------------------------------------------
   // Guardar Asiento por Total por producto
-  //-----------------------------------------------------------------------------
+  //-----------------------------------------------------------
   dcl-proc CONTABSRV_Guardar_Asiento_Total_producto;
 
     dcl-pi *n ind;
@@ -865,17 +800,6 @@
       If sqlStt <> '00000';
         Leave;
       EndIf;    
-      // CPYF FROMFILE(FICHEROS/BS) 
-      // TOFILE(PARALELOC/BS) 
-      // MBROPT(*REPLACE) 
-      // CRTFILE(*YES)                                                                            
-
-      // CRTDUPOBJ 
-      //  OBJ(BS) 
-      //  FROMLIB(FICHEROS) 
-      //  OBJTYPE(*FILE) 
-      //  TOLIB(PARALELOC) 
-      //  DATA(*NO)
 
       If WFile_Data = 'S';
         WCmd = 
