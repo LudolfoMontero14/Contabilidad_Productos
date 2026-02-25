@@ -1,8 +1,8 @@
 **Free
   ctl-opt option(*srcstmt : *nodebugio : *noexpdds)
-            decedit('0,') datedit(*DMY/)
-            bnddir('UTILITIES/UTILITIES':'EXPLOTA/CALDIG')
-            dftactgrp(*no) actgrp(*caller) main(main);
+        decedit('0,') datedit(*DMY/)
+        bnddir('UTILITIES/UTILITIES':'CONTBNDDIR')
+        dftactgrp(*no) actgrp(*new) main(main);
   //*************************************************************************
   //*          FACTURACION DIARIA DE ESTABLECIMIENTOS
   //*        ===============================================
@@ -42,6 +42,7 @@
   // --------------------------
   ///COPY EXPLOTA/QRPGLESRC,DSTIMSYS
 
+  /Define Estructuras_Asientos_Evidencias
   /define PGM_ULTKEY
   /Define dsBLODIANTpl
   /Define dsAUBOLSATpl
@@ -52,11 +53,12 @@
   /Define dsESTA1Tpl
   /Define dsDESCRFACTpl
   /Define dsOPATMXCTpl
-  /Copy EXPLOTA/QRPGLESRC,CONTAB_H
+  /Define Common_Variables
+  /define Funciones_CONTABSRV
+  /Include EXPLOTA/QRPGLESRC,CONTABSRVH  // Servicios de contabilidad
 
   /copy UTILITIES/QRPGLESRC,PSDSCP      // psds
   /copy UTILITIES/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
-  /copy EXPLOTA/QRPGLESRC,UTILSCONTH    // Utilidades contabilidad
   // --------------------------
   // Declaracion Estructuras
   // --------------------------
@@ -90,9 +92,9 @@
 
 
   // Array/Matriz que totaliza importes por productos
-  dcl-ds Acumulador likeds(Acumulador_Array) Dim(100) Inz;
+  dcl-ds Acumulador likeds(AcumuladorTpl) Dim(100) Inz;
   // Array/Matriz que totaliza importes de gastos por productos
-  dcl-ds Acumulador_Gastos likeds(Acumulador_Array) Dim(100) Inz;
+  dcl-ds Acumulador_Gastos likeds(AcumuladorTpl) Dim(100) Inz;
   // --------------------------
   // Declaracion de Variables
   // --------------------------
@@ -107,6 +109,9 @@
   Dcl-s WimpTotal_Gtos Zoned(10:0);
   Dcl-S fechaSistema Timestamp;
   Dcl-s v_tipo_error Char(3) Inz('PGM');
+  Dcl-s WNomDetPar Char(10);
+  Dcl-s WNomAsiPar Char(10);
+  Dcl-s WNomCabpar Char(10);
   // --------------------------
   // Declaracion de Cursores
   // --------------------------
@@ -138,9 +143,17 @@
 
     dcl-pi *n;
       TOTCUB   Packed(11:0);
+      P_NomAsiPar   Char(10);
+      P_NomCabpar   Char(10);
+      P_NomDetPar   Char(10);
+      P_NumApunte   Char( 6);
     end-pi;
 
     dcl-s BNUMES_ANT like(dsBLODIAN.BNUMES) inz(*loval); // Valor anterior de BNUMES
+
+    WNomAsiPar = P_NomAsiPar;
+    WNomCabpar = P_NomCabpar;
+    WNomDetPar = P_NomDetPar;
 
     InicializarDatos();
 
@@ -180,8 +193,8 @@
             Iter;
           EndIf;
 
-          // Asigno 901 solo a las operaciones Internacionales
-          WCod_Prod = 901;
+          // Asigno 777 solo a las operaciones Internacionales
+          WCod_Prod = 777;
           WNOM_TARJETA = 'Tarjeta Internacional';
           Acumula_importe(dsBLODIAN.BIMPOR/100:WCod_Prod);
 
@@ -207,13 +220,13 @@
             When Sqlcode < 0;
               observacionSql = 'Error busqueda de de datos de Tarjeta Diners Spain';
               Clear Nivel_Alerta;
-              Nivel_Alerta = Diagnostico(jobname:observacionSql);
+              Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
               WCod_Prod= 888;
               WNOM_TARJETA= 'ERROR en el T_MSOCIO';
             When sqlcode = 100;
               observacionSql = 'Error Tarjeta Diners Spain NO Existe';
               Clear Nivel_Alerta;
-              Nivel_Alerta = Diagnostico(jobname:observacionSql);
+              Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
               WCod_Prod= 888;
               WNOM_TARJETA= 'ERROR no existe Socio en el T_MSOCIO';
           endSl;
@@ -237,22 +250,24 @@
     Exec Sql Close  C_BLODIAN;
 
     If WimpTotal > 0;
-      Genera_Contabilidad_Totales_Producto(
-          Acumulador:     // Arreglo de Totales por Producto
-          WInd:           // Indice de registros Grabados en el Arreglo
-          WCodContab:     // Indice Contable: 5 Para este proceso
-          WApunte:        // NUmero de Apunte
-          fecproces       // Fecha del asiento DDMMAAAA
+      CONTABSRV_Genera_Contabilidad_Totales_Producto(
+          Acumulador     // Arreglo de Totales por Producto
+          :WInd           // Indice de registros Grabados en el Arreglo
+          :WCodContab     // Indice Contable: 5 Para este proceso
+          :WApunte        // NUmero de Apunte
+          :fecproces      // Fecha del asiento DDMMAAAA
+          :WNomAsiPar     // Nombre Fichero Parcial ASIFILEn
             );
 
       If WimpTotal_Gtos > 0;
         WCodContab = 34;      // Id Asientos gastos x productos
-        Genera_Contabilidad_Totales_Producto(
-          Acumulador_Gastos: // Arreglo de Totales Gastos x productos
-          WInd_Gtos:         // Indice de registros Grabados en el Arreglo
-          WCodContab:        // Indice Contable: 5 Para este proceso
-          WApunte:           // NUmero de Apunte
-          fecproces          // Fecha del asiento DDMMAAAA
+        CONTABSRV_Genera_Contabilidad_Totales_Producto(
+          Acumulador_Gastos  // Arreglo de Totales Gastos x productos
+          :WInd_Gtos         // Indice de registros Grabados en el Arreglo
+          :WCodContab        // Indice Contable: 5 Para este proceso
+          :WApunte           // NUmero de Apunte
+          :fecproces         // Fecha del asiento DDMMAAAA
+          :WNomAsiPar        // Nombre Fichero Parcial ASIFILEn
             );
       EndIf;
 
@@ -273,7 +288,7 @@
     Reset Acumulador;
 
     fechaSistema = %timestamp();
-    WApunte = Asignar_Numero_Apunte(fechaSistema);
+    WApunte = CONTABSRV_Asignar_Numero_Apunte(fechaSistema);
     fechaSistema = fechaSistema -  %days(1);
 
       // Guardamos datos fijos de dsDetevi.
@@ -317,7 +332,7 @@
       observacionSql = 'Error busqueda Codigo Establecimiento: ' +
                         %Char(Cod_Estab);
       Clear Nivel_Alerta;
-      Nivel_Alerta = Diagnostico(jobname:observacionSql);
+      Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
       Return *On;
     EndIf;
 
@@ -325,7 +340,7 @@
       observacionSql = 'Error Codigo Establecimiento no se encuentra: ' +
                         %Char(Cod_Estab);
       Clear Nivel_Alerta;
-      Nivel_Alerta = Diagnostico(jobname:observacionSql);
+      Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
       //Reset dsESTA1;
       Return *On;
     EndIf;
@@ -367,7 +382,7 @@
           ARFAVI, AIMPMO, AMONED, ACAMBI, AREFER, APECAD,
           AEMV
         into :dsAUBOLSA
-        from AUBOLSA
+        from SADE.AUBOLSA
         where
           ANUMTA = :dsBLODIAN.BTARJE
           and ANUMTF = :dsBLODIAN.BNUMTF
@@ -378,7 +393,7 @@
     If Sqlcode < 0;
       observacionSql = 'Error busqueda de Autorizacion (AUBOLSA) ';
       Clear Nivel_Alerta;
-      Nivel_Alerta = Diagnostico(jobname:observacionSql);
+      Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
       return *Off;
     EndIf;
 
@@ -401,7 +416,7 @@
             CVVRST, AUTYP, AURCDE, SECFAR, CVVIND, AUTHTR, VERACT2,
             IPADDR, SCAEXE, RPAIS, RSOCIO, RREFER, RFEREC, SEQNO
           into :dsOPGENXD
-          from OPGENXD
+          from FICHEROS.OPGENXD
           where
             RREFER = :dsBLODIAN.BREFER
             and RSOCIO = :NumSocio
@@ -411,7 +426,7 @@
         When Sqlcode < 0;
           observacionSql = 'Error busqueda de Autorizacion (OPGENXD) ';
           Clear Nivel_Alerta;
-          Nivel_Alerta = Diagnostico(jobname:observacionSql);
+          Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
           return *Off;
         When sqlcode = 0;
           dsDIN1.DNUMAU = dsOPGENXD.ANBR;
@@ -465,9 +480,9 @@
         R32ORI, RANULA, RFEHOR, RIDMSG,
         RMDMID, RMDCID
       into :dsRSYPRICE
-      FROM RSYPRICE
+      FROM PRICE.RSYPRICE
       where
-        SubStrint(Digits(RKEYAU), 1, 10) =
+        SubString(Digits(RKEYAU), 1, 10) =
           SubString(:dsAUBOLSA.ANUMTA, 1, 10) //PBASIC=ANUMTA
         and RP12 = :dsAUBOLSA.AFHCAJ
         and RTIPMS = Dec(:dsAUBOLSA.ACLOPE, 4, 0);
@@ -476,7 +491,7 @@
       When Sqlcode < 0;
         observacionSql = 'Error busqueda de Autorizacion (AUBOLSA) ';
         Clear Nivel_Alerta;
-        Nivel_Alerta = Diagnostico(jobname:observacionSql);
+        Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
         return *Off;
 
       When sqlcode = 100;
@@ -486,12 +501,12 @@
               PP11, PREINT, PSER, PKEYAU,
               P32ORI, PANULA, PFEHOR
             into :dsPRICEBOL
-            FROM PRICEBOL
+            FROM PRICE.PRICEBOL
             Where
-              SubStrint(Digits(PKEYAU), 1, 10) =
+              SubString(Digits(PKEYAU), 1, 10) =
                 SubString(:dsAUBOLSA.ANUMTA, 1, 10) //PBASIC=ANUMTA
               and PP12 = :dsAUBOLSA.AFHCAJ
-              and PTIPMS = Dec(:dsAUBOLSA.ACLOPE, 4, 0);;
+              and PTIPMS = Dec(:dsAUBOLSA.ACLOPE, 4, 0);
 
       When sqlcode = 0;
          dsRSYPRICE.RSER = dsPRICEBOL.PSER;
@@ -515,7 +530,7 @@
       endif;
     endfor;
     //endif;
-
+      return *On;
   End-Proc;
   //-----------------------------------------------------------------
   // Acumula_importe
@@ -588,9 +603,14 @@
 
     dcl-s marca char(1) inz(CREAR_TEMPORAL);
 
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al crear temporal de Evidencias';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       return *off;
     endif;
 
@@ -637,9 +657,14 @@
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
 
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al registro de Evidencia en el temporal';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       Return;
     EndIf;
 
@@ -661,9 +686,14 @@
           %SubSt(%Editc(fecproces:'X'):5:4);
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Cabecera_detalle';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       return;
     EndIf;
 
@@ -672,9 +702,14 @@
           '                          IMPORTE   PROD    CAJERO';
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Cabecera_detalle';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       return;
     EndIf;
 
@@ -683,9 +718,14 @@
           '--------------------------------------------------';
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Cabecera_detalle';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       return;
     EndIf;
 
@@ -704,9 +744,14 @@
     dsDetevi.lineaTexto = '';
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Totales_Evi';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       return;
     EndIf;
 
@@ -716,9 +761,14 @@
           '         Total' ;
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Totales_Evi';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       return;
     EndIf;
 
@@ -728,9 +778,14 @@
           '         ------------' ;
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Totales_Evi';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       return;
     EndIf;
 
@@ -759,9 +814,14 @@
       WnumLinea += 1;
       dsDetevi.numeroLinea = numeroLinea;
 
-      if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+      if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+        marca
+        :dsDetevi
+        :sqlError
+        :sqlMensaje
+        :WNomDetPar);
         V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Totales_Evi';
-        Diagnostico(jobname:V_observacion:V_tipo_error);
+        Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
         Leave;
       EndIf;
     EndFor;
@@ -770,9 +830,14 @@
     dsDetevi.lineaTexto = '';
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Totales_Evi';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       return;
     EndIf;
 
@@ -782,9 +847,14 @@
           '         Total' ;
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Totales_Evi';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       return;
     EndIf;
 
@@ -794,9 +864,14 @@
           '         ------------' ;
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Totales_Evi';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
       return;
     EndIf;
 
@@ -823,9 +898,14 @@
       WnumLinea += 1;
       dsDetevi.numeroLinea = numeroLinea;
 
-      if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+      if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+        marca
+        :dsDetevi
+        :sqlError
+        :sqlMensaje
+        :WNomDetPar);
         V_observacion = 'NACI05NEW: Error al registro de Evidencia Inserta_Totales_Evi';
-        Diagnostico(jobname:V_observacion:V_tipo_error);
+        Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
         Leave;
       EndIf;
     EndFor;
@@ -841,9 +921,14 @@
 
     dcl-s marca char(1) inz(GRABAR_A_FICHERO);
 
-    if not Guardar_Evidencias_Contables_Detalle(marca:dsDetevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Detalle(
+      marca
+      :dsDetevi
+      :sqlError
+      :sqlMensaje
+      :WNomDetPar);
       V_observacion = 'NACI05NEW: Error al grabar temporal en el DETEVI';
-      Diagnostico(jobname:V_observacion:V_tipo_error);
+      Diagnostico(PROCEDURENAME:V_observacion:V_tipo_error);
     endif;
 
   end-proc;
@@ -870,7 +955,11 @@
     dsCabevi.pteModificar = *blanks;
     dsCabevi.numeroEvidencia = dsDetevi.numeroEvidencia;
 
-    if not Guardar_Evidencias_Contables_Cabecera(dsCabevi:sqlError:sqlMensaje);
+    if not CONTABSRV_Guardar_Evidencias_Contables_Cabecera(
+      dsCabevi
+      :sqlError
+      :sqlMensaje
+      :WNomCabpar);
       return *off;
     endif;
 
@@ -940,7 +1029,7 @@
     if sqlcode < 0;
       observacionSql = 'NACI05NEW Error alta en DIN1';
       Clear Nivel_Alerta;
-      Nivel_Alerta = Diagnostico(jobname:observacionSql);
+      Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
     Endif;
 
     If dsESTA1.EACTPR = 99;
@@ -964,7 +1053,7 @@
         When Sqlcode < 0;
           observacionSql = 'NACI05NEW Error en lectura en DESCRFAC';
           Clear Nivel_Alerta;
-          Nivel_Alerta = Diagnostico(jobname:observacionSql);
+          Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
         When SqlCode = 0;
           Exec SQL
             Select
@@ -1000,7 +1089,7 @@
             if sqlcode < 0;
               observacionSql = 'NACI05NEW Error alta en DESCRFAC';
               Clear Nivel_Alerta;
-              Nivel_Alerta = Diagnostico(jobname:observacionSql);
+              Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
             Endif;
 
             // Generacion de Registro en el DESCRCAJ
@@ -1011,7 +1100,7 @@
             if sqlcode < 0;
               observacionSql = 'NACI05NEW Error alta en DESCRCAJ';
               Clear Nivel_Alerta;
-              Nivel_Alerta = Diagnostico(jobname:observacionSql);
+              Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
             Endif;
 
             exec sql
@@ -1019,7 +1108,7 @@
                 AXCREF, AXCFEC, AXCSOC, AXCPAI, AXCREC,
                 SCGMT, SCDAT, LCTIM, LCDAT, ATMID
              into :dsOPATMXC
-             from OPATMXC
+             from FICHEROS.OPATMXC
             where
               AXCREF = :WGKEY
               and AXCSOC = Dec(SubString(:dsBLODIAN.BTARJE, 3, 8), 8, 0)
@@ -1028,7 +1117,7 @@
             if sqlcode < 0;
               observacionSql = 'NACI05NEW Error en lectura en OPATMXC';
               Clear Nivel_Alerta;
-              Nivel_Alerta = Diagnostico(jobname:observacionSql);
+              Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
             Endif;
 
             If SqlCode = 100;
@@ -1040,7 +1129,7 @@
               if sqlcode < 0;
                 observacionSql = 'NACI05NEW Error alta en DESCRCAJ';
                 Clear Nivel_Alerta;
-                Nivel_Alerta = Diagnostico(jobname:observacionSql);
+                Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
               Endif;
             Endif;
           EndIf;
@@ -1054,7 +1143,7 @@
       if sqlcode < 0;
         observacionSql = 'NACI05NEW Error alta en DIN1 - Gastos';
         Clear Nivel_Alerta;
-        Nivel_Alerta = Diagnostico(jobname:observacionSql);
+        Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
       Endif;
     EndIf;
 

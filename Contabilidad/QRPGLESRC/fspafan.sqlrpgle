@@ -4,9 +4,14 @@
   //****************************************************************
   //*  -FACT.SOCIOS- ASIENTO TRASPASO -PA- A -FA-                 **
   //****************************************************************
+  /Define Funciones_CONTABSRV
+  /Define PGM_ASBUNU
+  /Define Estructuras_Asientos_Evidencias
+  /define Common_Variables
+  /Include Explota/QRPGLESRC,CONTABSRVH
+
   /copy UTILITIES/QRPGLESRC,PSDSCP      // psds
   /Include UTILITIES/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
-  /copy EXPLOTA/QRPGLESRC,CONTABSRVH       // Utilidades contabilidad
 
   Dcl-S fechaSistema Timestamp;
 

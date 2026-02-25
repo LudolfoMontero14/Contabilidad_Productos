@@ -11,10 +11,14 @@
   //------------------------------------------------------------
   // Copys
   //------------------------------------------------------------
+  /Define Funciones_CONTABSRV
+  /Define Estructuras_Asientos_Evidencias
+  /define Common_Variables
+  /Include EXPLOTA/QRPGLESRC,CONTABSRVH       // Utilidades contabilidad
+
   /COPY EXPLOTA/QRPGLESRC,DSNUMSOCI
   /copy UTILITIES/QRPGLESRC,PSDSCP      // psds
   /Include UTILITIES/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
-  /copy EXPLOTA/QRPGLESRC,CONTABSRVH       // Utilidades contabilidad
 
   //------------------------------------------------------------
   // Prototipos
@@ -280,7 +284,7 @@
       CLATOT   = 'BORECI';
       TEXTO    = 'ACUMULACION FAC.SOC DI/MC';
       FECSYS   = UDATE;
-      //ACUTOTN(CLATOT:TEXTO:TOTREC:FECSYS);
+      ACUTOTN(CLATOT:TEXTO:TOTREC:FECSYS);
 
       P_NumApunte = WApunte;   // Para devolver el numero de Apunte por paramatro
     Endif;

@@ -44,14 +44,14 @@ PGM &NomProc
       MONMSG MSGID(CPF0000)
 
       CPYF  FROMFILE(PARALELOC/CABEPAFA) TOFILE(PARALELOC/CABEVI) +
-            MBROPT(*ADD) 
+            MBROPT(*ADD) CRTFILE(*YES) 
       MONMSG MSGID(CPF0000)
 
       /*-------------------------------------------------------*/
       /* Esta copia al historico debe eliminarse en produccion */
       /*-------------------------------------------------------*/
       CPYF  FROMFILE(PARALELOC/ASIPAFAN) TOFILE(PARALELOC/ASI_HISTO) +
-            MBROPT(*ADD) 
+            MBROPT(*ADD) CRTFILE(*YES) 
       MONMSG MSGID(CPF0000)
       /*-------------------------------------------------------*/
 
@@ -69,4 +69,5 @@ PGM &NomProc
     /*--------------------------------*/
     /* Fin del FSPAFAN New            */
     /*--------------------------------*/    
+    DSPJOBLOG  OUTPUT(*OUTFILE) OUTFILE(LJMONTERO/FSPAFANJOB)
 endpgm

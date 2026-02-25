@@ -16,7 +16,7 @@
   //   EXPLOTA/CALDING
   //
   // COMPILAR:
-  // CRTSQLRPGI OBJ(EXPLOTA/CONTABSRV) COMMIT(*NONE)
+  // CRTSQLRPGI OBJ(EXPLOTA/CONTABSRV) COMMIT(*NONE) RPGPPOPT(*LVL2)
   //     CLOSQLCSR(*ENDMOD) DBGVIEW(*SOURCE) OBJTYPE(*MODULE)
   //
   // CREAR SRVPGM:
@@ -29,10 +29,16 @@
   ctl-opt decedit('0,') datedit(*dmy.)
     option(*srcstmt : *nodebugio : *noexpdds) nomain;
 
-  /copy Explota/QRPGLESRC,CONTABSRVH
+  /Define Funciones_CONTABSRV
+  /Define PGM_ASBUNU
+  /Define Estructuras_Asientos_Evidencias
+  /define Common_Variables
+  /Include Explota/QRPGLESRC,CONTABSRVH
+
   /copy Utilities/QRPGLESRC,PSDSCP         // psds
   /Include Utilities/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
 
+    dcl-s SqlStr char(1000) inz;
   //---------------------------------------------------------------
   // Guardar Evidencias Contables - Cabecera
   //---------------------------------------------------------------
@@ -44,8 +50,6 @@
       out_sqlMensaje char(70);
       in_NomCabpar Char(10);
     end-pi;
-
-    dcl-s SqlStr char(1000) inz;
 
     out_sqlError = *blanks;
     out_sqlMensaje = *blanks;
@@ -77,7 +81,6 @@
     return *on;
 
   end-proc;
-
   //---------------------------------------------------------------
   // Guardar Evidencias Contables - Detalle
   // Marca: C - Crear Fic. Temporal
@@ -139,22 +142,20 @@
       out_sqlMensaje char(70);
     end-pi;
 
-    dcl-s consulta char(1000) inz;
-
-    consulta = 'DROP TABLE QTEMP.' + %trim(in_nombreFichero);
+    sqlstr = 'DROP TABLE QTEMP.' + %trim(in_nombreFichero);
 
     Monitor;
       Exec Sql
-        Execute Immediate :consulta;
+        Execute Immediate :sqlstr;
     On-Error;
     EndMon;
 
-    consulta = 'CREATE TABLE QTEMP.' + %trim(in_nombreFichero) +
+    sqlstr = 'CREATE TABLE QTEMP.' + %trim(in_nombreFichero) +
       ' AS (SELECT * FROM FICHEROS.DETEVI) WITH NO DATA';
 
     Monitor;
       Exec Sql
-        Execute Immediate :consulta;
+        Execute Immediate :sqlstr;
 
       If sqlStt <> '00000';
         out_sqlError = sqlStt;
@@ -185,9 +186,7 @@
       out_sqlMensaje char(70);
     end-pi;
 
-    dcl-s consulta char(1000) inz;
-
-    consulta = 'INSERT INTO  QTEMP.' + %trim(in_nombreFichero) +
+    sqlstr = 'INSERT INTO  QTEMP.' + %trim(in_nombreFichero) +
       '(ELINEA, ENULIN, ENUAPU, EFEALT, ENUEVI) +
       VALUES(''' + in_dsDetevi.lineaTexto +
              ''', ' + %editc(in_dsDetevi.numeroLinea:'X') +
@@ -197,7 +196,7 @@
 
     Monitor;
       Exec Sql
-        Execute Immediate :consulta;
+        Execute Immediate :sqlstr;
 
       If sqlStt <> '00000';
         out_sqlError = sqlStt;
@@ -229,15 +228,13 @@
       in_NomDetpar char(10);
     end-pi;
 
-    dcl-s consulta char(500) inz;
-
-    consulta = 'INSERT INTO '                +
+    sqlstr = 'INSERT INTO '                +
     in_NomDetpar                             +
     'SELECT * FROM QTEMP.' + %trim(in_nombreFichero);
 
     Monitor;
       Exec Sql
-        Execute Immediate :consulta;
+        Execute Immediate :sqlstr;
 
       If sqlStt <> '00000';
         out_sqlError = sqlStt;
@@ -268,7 +265,6 @@
       in_NomCabpar Char(10);
     end-pi;
 
-    dcl-s SqlStr char(1000) inz;
 
     out_sqlError = *blanks;
     out_sqlMensaje = *blanks;
@@ -492,7 +488,6 @@
       P_NomAsiPar char(10);
     end-pi;
 
-    dcl-s SqlStr char(1000) inz;
 
     SqlStr = 
       'INSERT INTO '                                               +
@@ -597,21 +592,23 @@
     Dcl-s WMarca   Zoned(2);
     Dcl-s WCodProd Zoned(3);
     Dcl-s WExiste_Cod   Ind;
+    Dcl-s WCodDiv  Char(3);
 
+    Sqlcode = 0;
     For I=1 to Inx;
-
       // Se verifica Producto
       WCodProd = Acumulador(I).Cod_prod;
-      If WCodProd = 777;
-        WMarca = 1; // Diners por defecto
-      Else;
-        Exec SQL
-          Select Codigo_Marca
-          Into :WMarca
-          From PRODUCTOS_DCS
-          Where
-            CODIGO_PRODUCTO = :WCodProd;
-      Endif;
+      // 901 para NACI05M Diners ADQ
+      // If WCodProd = 901;
+      //   WMarca = 1; // Diners ADQ
+      // Else;
+      Exec SQL
+        Select Codigo_Marca, DIVISA_ISO
+        Into :WMarca, :WCodDiv
+        From PRODUCTOS_DCS
+        Where
+          CODIGO_PRODUCTO = :WCodProd;
+      //Endif;
 
       If Sqlcode < 0;
         observacionSql = 'CONTABSRV_Genera_Contabilidad_Totales_Producto: ' +
@@ -637,13 +634,34 @@
                          'Error en Select ASIENTOS_CUENTAS_POR_PRODUCTO';
         Clear Nivel_Alerta;
         Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
+        Iter;
       EndIf;
 
       Select;
-        When Not WExiste_Cod and WMarca=1; // Valida Diners s/conciliacion
+        When  Not WExiste_Cod and 
+              WMarca=1 and 
+              WCodDiv='EUR'; // Valida Diners EUR
           WCodprod = 999;
-        When Not WExiste_Cod and WMarca=2; // Valida Mastercard
+        When  Not WExiste_Cod and 
+              WMarca=2 and 
+              WCodDiv='EUR'; // Valida MC EUR
           WCodprod = 998;
+        When  Not WExiste_Cod and 
+              WMarca=1 and 
+              WCodDiv='GBP'; // Valida Diners GBP
+          WCodprod = 995;
+        When  Not WExiste_Cod and 
+              WMarca=2 and 
+              WCodDiv='GBP'; // Valida MC GBP
+          WCodprod = 994;
+        When  Not WExiste_Cod and 
+              WMarca=1 and 
+              WCodDiv='USD'; // Valida Diners USD
+          WCodprod = 997;
+        When  Not WExiste_Cod and 
+              WMarca=2 and 
+              WCodDiv='USD'; // Valida MC USD
+          WCodprod = 996;
       EndSl;
 
       if not CONTABSRV_Guardar_Asiento_Total_producto(
@@ -761,23 +779,28 @@
   //-----------------------------------------------------------------
   dcl-proc CONTABSRV_Copy_Ficheros_Paralelo export;
 
-    dcl-pi *n;
+    dcl-pi *n Ind;
       P_NomProc  Char(10);
+      P_ENV      Char(10);
     end-pi;
 
     Dcl-s WFile_Req Char(10);
     Dcl-s WFile_Typ Char( 1);
     Dcl-s WFile_Lib Char(10);
+    Dcl-s WFile_name Char(10);
+    Dcl-s WFile_Src Char(10);
     Dcl-s WFile_Data Char( 1);
     Dcl-s WCmd varchar(1000);
     dcl-s SqlState char(5)   inz;
     dcl-s SqlCode  int(10)   inz(0);
     dcl-s MsgTxt   varchar(500) inz;
+    dcl-s WFile_Existe Ind;
 
     // Declaracion de Cursor de los ficheros a Copiar
     Exec Sql declare  C_Fic_Copy Cursor For
       Select 
-        FILE_REQUERIDO, FILE_TYPE, FILE_LIB_ORIGEN, SI_DATA 
+        FILE_REQUERIDO, FILE_TYPE, FILE_LIB_SRC, 
+        FILE_NAME_SRC, FILE_SRC, FILE_DATA 
       From PARALELOC.PARALELO_COFIG_PROCESS
       Where
         ID_PROCESO = :P_NomProc
@@ -785,39 +808,69 @@
 
     Exec Sql Open  C_Fic_Copy;
     If Sqlcode < 0;
-        observacionSql = 'CONTABSRV_Copy_Ficheros_Paralelo: ' +
-                         'Error en OPEN del Cursor';
-        Clear Nivel_Alerta;
-        Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-        //Return *Off;
-      EndIf;
+      observacionSql = 'CONTABSRV_Copy_Ficheros_Paralelo: ' +
+                       'Error en OPEN del Cursor';
+      Clear Nivel_Alerta;
+      Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
+      Return *Off;
+    EndIf;
       
-    //sqlStt = '00000';
-
     dow sqlStt = '00000';
       Exec Sql Fetch From  C_Fic_Copy into 
-            :WFile_Req, :WFile_Typ, :WFile_Lib, :WFile_Data;
+            :WFile_Req, :WFile_Typ, :WFile_Lib, 
+            :WFile_name, :WFile_src, :WFile_Data;
       If sqlStt <> '00000';
         Leave;
       EndIf;    
 
-      If WFile_Data = 'S';
-        WCmd = 
-          'CPYF FROMFILE('                                  +
-          %Trim(WFile_Lib) + '/'                            +
-          %Trim(WFile_Req) + ') '                           + 
-          'TOFILE(PARALELOC/'                               +
-          %Trim(WFile_Req) + ') '                           + 
-          'MBROPT(*REPLACE) CRTFILE(*YES)';
+      If WFile_Src <> ' ' and WFile_name <> ' ';
+        WFile_Existe = *off;
+        Exec SQL
+          SELECT '1'
+          Into :WFile_Existe
+          FROM QSYS2.SysTables
+          WHERE TABLE_SCHEMA = :P_ENV
+           AND TABLE_NAME   = :WFile_Req
+        ;
+        If WFile_Existe;
+          WCmd = 'CLRPFM FILE('                 +
+          %Trim(P_ENV) + '/'                    + 
+          %Trim(WFile_Req) + ')';          
+
+        Else;
+          WCmd = 
+          'CRTPF FILE('                         +
+          %Trim(P_ENV) + '/'                    + 
+          %Trim(WFile_Req) + ') '               +
+          'SRCFILE('                            +    
+          %Trim(WFile_Lib) + '/'                +
+          %trim(WFile_src) + ') SRCMBR('        +
+          %Trim(WFile_name) + ') '              +
+          'OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) '+
+          'LVLCHK(*NO) AUT(*ALL)';
+
+        EndIf;
       Else;
-        WCmd = 
-        'CRTDUPOBJ '                                        + 
-        'OBJ('                                              +
-        %Trim(WFile_Req) + ') '                             + 
-        'FROMLIB('                                          +
-        %Trim(WFile_Lib) + ') '                             + 
-        'OBJTYPE(*FILE) TOLIB(PARALELOC) DATA(*NO)';
-      Endif;
+        If WFile_Data = 'S';
+          WCmd = 
+          'CPYF FROMFILE('                      +
+          %Trim(WFile_Lib) + '/'                +
+          %Trim(WFile_Req) + ') '               + 
+          'TOFILE(' + %trim(P_ENV) + '/'        +
+          %Trim(WFile_Req) + ') '               + 
+          'MBROPT(*REPLACE) CRTFILE(*YES)';
+        Else;
+          WCmd = 
+          'CRTDUPOBJ '                          + 
+          'OBJ('                                +
+          %Trim(WFile_Req) + ') '               + 
+          'FROMLIB('                            +
+          %Trim(WFile_Lib) + ') '               + 
+          'OBJTYPE(*FILE) '                     +
+          'TOLIB(' + %trim(P_ENV)               +
+          'DATA(*NO)';
+        Endif;
+      EndIf;
 
       monitor;
         exec sql CALL QSYS2.QCMDEXC(:WCmd) ;      
@@ -836,14 +889,16 @@
         Clear Nivel_Alerta;
         Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
 
-        //return *off;
-        leave;
+        return *off;
+        //leave;
       endmon;
+
+
     EndDo;
 
     Exec Sql Close  C_SolPend; 
 
-    //Return *On;
+    Return *On;
   end-proc;
   //-----------------------------------------------------------------
   // Inserta registro de Auditoria 

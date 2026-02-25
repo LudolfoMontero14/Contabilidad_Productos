@@ -27,7 +27,10 @@
   // --------------------------
   // Cpys y Include
   // --------------------------
-  /include QRPGLESRC/CONTABSRVH         // Definiciones Contables
+  /Define Funciones_CONTABSRV
+  /Define Estructuras_Asientos_Evidencias
+  /define Common_Variables
+  /include QRPGLESRC,CONTABSRVH         // Definiciones Contables
 
   // --------------------------
   // Declaracion Estructuras

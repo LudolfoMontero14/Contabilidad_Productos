@@ -1,37 +1,11 @@
-PGM &NomProc
+  PGM (&NomProc &NOMENV)
     dcl  &NomProc  *char  10
+    dcl  &NOMENV   *char  10
     dcl  &Numreg   *dec  (10 0) 
     dcl  &NUMAPU   *char   6
 
-    Call NOEXISTE
-    /* Proceso que copia los ficheros Necesarios  */
-    Call CONTAB100 Parm('CEREFSN')
-
-    /*--------------------------------*/
-    /* To Do CEREFSN                  */
-    /*--------------------------------*/
-
-             CRTPF      FILE(PARALELOC/ASICEREFSN) +
-                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFIVA) +
-                          OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
-                          LVLCHK(*NO) AUT(*ALL)
-             MONMSG     MSGID(CPF0000) CMPDTA(*NONE) EXEC(CLRPFM +
-                          FILE(PARALELOC/ASICEREFSN))
-
-             CRTPF      FILE(PARALELOC/DETECERE) +
-                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(DETEVI) +
-                          TEXT('Evidencias Contables CEREFS - Recibos') +
-                          OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
-             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
-                          FILE(PARALELOC/DETECERE))
-
-             CRTPF      FILE(PARALELOC/CABECERE) +
-                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(CABEVI) +
-                          TEXT('Cab. Evid. Contables CEREFS - Recibos') +
-                          OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
-             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
-                          FILE(PARALELOC/CABECERE))
-
+    /*------------------------------------------------------*/
+    /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */ 
     /*------------------------------------------------------*/
     CALL       PGM(PARALELOC/CEREFSN) +
                PARM(&NomProc          +
@@ -39,28 +13,15 @@ PGM &NomProc
                     'CABECERE'        +
                     'DETECERE'        +
                     &NUMAPU)                 
+
     /*------------------------------------------------------*/
-
-    RTVMBRD    FILE(PARALELOC/ASICEREFSN) NBRCURRCD(&NUMREG)
-    IF COND(&NUMREG > 0) THEN(DO)
-
-      CPYF  FROMFILE(PARALELOC/DETECERE) TOFILE(PARALELOC/DETEVI) +
-            MBROPT(*ADD) 
-      MONMSG MSGID(CPF0000)
-
-      CPYF  FROMFILE(PARALELOC/CABECERE) TOFILE(PARALELOC/CABEVI) +
-            MBROPT(*ADD) 
-      MONMSG MSGID(CPF0000)
-
-      /*-------------------------------------------------------*/
-      /* Esta copia al historico debe eliminarse en produccion */
-      /*-------------------------------------------------------*/
-      CPYF  FROMFILE(PARALELOC/ASICEREFSN) TOFILE(PARALELOC/ASI_HISTO) +
-            MBROPT(*ADD) 
-      MONMSG MSGID(CPF0000)
-      /*-------------------------------------------------------*/
-
-    ENDDO
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+    CALL       PGM(CONTAB102) +
+               PARM('ASICEREFSN'      +
+                    'CABECERE'        +
+                    'DETECERE'        +
+                    &NOMENV)                 
 
     /*-------------------------------------------------------*/
     /* Actualiza Auditoria Paralelo                          */
@@ -75,4 +36,5 @@ PGM &NomProc
     /*--------------------------------*/
     /* Fin del CEREFSN New            */
     /*--------------------------------*/    
-endpgm
+    DSPJOBLOG  OUTPUT(*OUTFILE) OUTFILE(LJMONTERO/CEREFSNJOB)
+  endpgm

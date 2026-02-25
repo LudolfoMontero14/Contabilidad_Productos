@@ -58,6 +58,8 @@
              DCL        VAR(&PRIORID) TYPE(*DEC) LEN(1 0) VALUE(9)
              DCL        VAR(&DESCRIP) TYPE(*CHAR) LEN(80)
 
+             DCL        VAR(&NOMPARA) TYPE(*CHAR) LEN(10)
+
 /*-------------------------------------------------------------------*/
 
              CALL       PGM(EXPLOTA/TRACE3) PARM(&DATOS)
@@ -2023,9 +2025,10 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
      /*    PARALELO - Contabilidad por Producto                */
      /*--------------------------------------------------------*/
 
-             SBMJOB     CMD(CALL PGM(PARALELOC/CEREFSN_P) + 
-                        PARM(('FS01COM'))) +
-                        JOB(CEREFSN_P) INLLIBL(PARALELOC EXPLOTA)
+             CALL PGM(PARALELOC/CEREFSN_P) +
+                  PARM(('FS01COM') +
+                       ('CEREFSN_P') +
+                       (&NOMPARA))
 
      /*--------------------------------------------------------*/
              CHGVAR     VAR(&TEX) VALUE('FS01CO, ANTES DE PGM-CEREFS')
@@ -2145,6 +2148,16 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
                             CONT. DESPUES DEL CEREFS')
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASIRECFS FICHEROS +
                           ASIRECFS LIBSEG1D C ' ' ' ' &TEX FS01CO)
+
+    /*------------------------------------------------------*/
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+    CALL       PGM(CONTAB102)         +
+               PARM('ASIRECFS'        +
+                    'V'               +
+                    'CABECERE'        +
+                    'DETECERE'        +
+                    'FICHEROS')           
 
              Clrpfm  Ficheros/ASIRECFS
                    ENDDO
@@ -2731,7 +2744,7 @@ RE54:        CHGVAR     VAR(&TEX) VALUE('FS01CO, DESPUES DEL +
      /*    PARALELO                                            */
      /*--------------------------------------------------------*/
 
-             SBMJOB     CMD(CALL PGM(Paraleloc/FSPAFAN_P) + 
+             SBMJOB     CMD(CALL PGM(Paraleloc/FSPAFAN_P) +
                         PARM(('FS01COM'))) +
                           JOB(FSPAFAN_P) INLLIBL(PARALELOC EXPLOTA)
 
@@ -2950,25 +2963,23 @@ RE63:        CHKOBJ     OBJ(FICHEROS/PAPRE) OBJTYPE(*FILE)
              MONMSG     CPF0000 EXEC(GOTO NOPAPRE)
              CHGJOB     DATE(&FECHA)
 
+             CALL       PGM(EXPLOTA/TRACE) PARM(('* OJO, HAY UN +
+                          PAPRE EN LA FICHEROS, ESTO SOLO PUEDE +
+                          OCURRIR SI EN LA ULTIMA ') (' ') (FS01CO))
+             CALL       PGM(EXPLOTA/TRACE) PARM(('* FACTURACION DE +
+                          ESTAB., NO SE PUDO ACUMULAR AL +
+                          PA.                       ') (' ') (FS01CO))
+             CALL       PGM(EXPLOTA/TRACE) PARM(('* EN ESE CASO +
+                          DEBEIS TENER UN AVISO PRODUCIDO POR EL +
+                          PGM-ACUPACL EN EL QUE SE') (' ') (FS01CO))
+             CALL       PGM(EXPLOTA/TRACE) PARM(('* COMENTA ESTE HECHO.') + 
+             (' ') (FS01CO))
+             CALL       PGM(EXPLOTA/TRACE) PARM(('* POR LO TANTO AL +
+                          PULSAR INTRO SE EJECUTARA EL PGM-ACUPACL2 +
+                          PARA QUE DICHO    ') (' ') (FS01CO))
+             CALL       PGM(EXPLOTA/TRACE) PARM(('* PAPRE SE ACUMULE + 
+                          AHORA.') (' ') (FS01CO))
 
-             CALL       PGM(EXPLOTA/TRACE) PARM('* OJO, hay un PAPRE +
-                          en la ficheros, esto solo puede ocurrir +
-                          si en la ultima ' ' ' FS01CO)
-             CALL       PGM(EXPLOTA/TRACE) PARM('* facturacion de +
-                          estab., no se pudo acumular al +
-                          PA.                       ' ' ' FS01CO)
-             CALL       PGM(EXPLOTA/TRACE) PARM('* En ese caso +
-                          debeis tener un aviso producido por el +
-                          pgm-acupacl en el que se' ' ' FS01CO)
-             CALL       PGM(EXPLOTA/TRACE) PARM('* comenta este +
-                          hecho.                                      -
-                   ' ' ' FS01CO)
-             CALL       PGM(EXPLOTA/TRACE) PARM('* Por lo tanto al +
-                          pulsar intro se ejecutara el pgm-acupacl2 +
-                          para que dicho    ' ' ' FS01CO)
-             CALL       PGM(EXPLOTA/TRACE) PARM('* PAPRE se acumule +
-                          ahora.                                      -
-               ' ' ' FS01CO)
 
              CALL       PGM(EXPLOTA/ACUPACL2M) PARM(&FECHA)
              CHGJOB     DATE(&FECHA)
@@ -2997,8 +3008,7 @@ RE63:        CHKOBJ     OBJ(FICHEROS/PAPRE) OBJTYPE(*FILE)
 
              CPYF       FROMFILE(FICHEROS/BSFACINLA) +
                           TOFILE(FICHEROS/BSFACIN) MBROPT(*ADD) +
-                          FROMRCD(1) FMTOPT(*NOCHK) +
-                          /* Extractos Laser */
+                          FROMRCD(1) FMTOPT(*NOCHK) 
              MONMSG     MSGID(CPF0000)
 /*--------*/
 /* COPIAS */
