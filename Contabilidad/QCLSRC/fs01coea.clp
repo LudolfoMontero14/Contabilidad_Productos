@@ -63,6 +63,7 @@
                           incidencias */
              DCL        VAR(&PRIORID) TYPE(*DEC) LEN(1 0) VALUE(9)
              DCL        VAR(&DESCRIP) TYPE(*CHAR) LEN(80)
+             DCL        VAR(&NOMPARA) TYPE(*CHAR) LEN(10)
 
              CHGVAR     VAR(&RESPU) VALUE('NO') /* NUNCA ULTIMA */
 /*-------------------------------------------------------------------*/
@@ -1376,7 +1377,7 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
 /*-- RPG. CEREFS    "ACUMULACION A LA BOLSA DE RECIBOS"            --*/
 /*-- CLP. EVIADDCL  -GENERACION AUTOMATICA EVIDENCIAS CONTABLES    --*/
 /*-------------------------------------------------------------------*/
- RE43:       
+ RE43:
              CL1        LABEL(CTLREC) LIB(FICHEROS)
              CALL       PGM(EXPLOTA/TRACE) PARM('PROGRAMA CEREFS EN +
                           EJECUCION' ' ' FS01CO)
@@ -1402,10 +1403,10 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
      /*    Nueva version del CEREFS (CEREFSN)             LM   */
      /*    PARALELO - Contabilidad por Producto                */
      /*--------------------------------------------------------*/
-
-             SBMJOB     CMD(CALL PGM(PARALELOC/CEREFSN_P) + 
-                        PARM(('FS01COEA'))) +
-                        JOB(CEREFSN_P) INLLIBL(PARALELOC EXPLOTA)
+             CALL PGM(EXPLOTA/CONTAB000) +
+                  PARM(('FS01COEA') +
+                       ('CEREFSN_P') +
+                       (&NOMPARA))
 
      /*--------------------------------------------------------*/
              CHGVAR     VAR(&TEX) VALUE('FS01CO, ANTES DE PGM-CEREFS')
@@ -1499,6 +1500,17 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
                             CONT. DESPUES DEL CEREFS')
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASIRECFS FICHEROS +
                           ASIRECFS LIBSEG1D C ' ' ' ' &TEX FS01CO)
+
+    /*------------------------------------------------------*/
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+             CALL       PGM(CONTAB102) +
+                        PARM('ASIRECFS'       +
+                            'CABECERE'        +
+                            'DETECERE'        +
+                            &NOMPARA          +
+                            'V'               +
+                            'P')
 
              Clrpfm  Ficheros/ASIRECFS
              ENDDO
@@ -2023,13 +2035,13 @@ RE54:        CHGVAR     VAR(&TEX) VALUE('FS01CO, DESPUES DEL +
                           en Ejecucion' ' ' FS01CO)
 
      /*--------------------------------------------------------*/
-     /*    Nueva version del FSPAFA (Actualizacion)       LM   */
-     /*    PARALELO                                            */
+     /*    Nueva version del FSPAFAN (Actualizacion)       LM  */
+     /*    PARALELO - Contabilidad por Producto                */
      /*--------------------------------------------------------*/
-
-             SBMJOB     CMD(CALL PGM(Paraleloc/FSPAFAN_P) + 
-                        PARM(('FS01COEA'))) +
-                          JOB(FSPAFAN_P) INLLIBL(PARALELOC EXPLOTA)
+             CALL PGM(EXPLOTA/CONTAB000) +
+                  PARM(('FS01COEA') +
+                       ('FSPAFAN_P') +
+                       (&NOMPARA))
 
      /*--------------------------------------------------------*/
              CRTPF      FILE(FICHEROS/ASIPAFAN) +
@@ -2083,6 +2095,16 @@ RE54:        CHGVAR     VAR(&TEX) VALUE('FS01CO, DESPUES DEL +
                         CABEPAFA LIBSEG30D C ' ' ' ' &TEX FS01CO)
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASIPAFAN FICHEROS +
                         ASIPAFAN LIBSEG30D C ' ' ' ' &TEX FS01CO)
+    /*------------------------------------------------------*/
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+             CALL       PGM(CONTAB102) +
+                        PARM('ASIPAFAN'       +
+                            'CABEPAFA'        +
+                            'DETEPAFA'        +
+                            &NOMPARA          +
+                            'N'               +
+                            'P')
 
              ENDDO
          /*--------------------------------------------------------*/

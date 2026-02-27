@@ -1,0 +1,180 @@
+/*------------------------------------------------------------------*/
+/* Modulo de Anexos de Tarjeta - Catalogo de Tipos de Anexos        */
+/* Autor: Ludolfo Montero                                           */
+/* Fecha: Septiembre 2024                                           */
+/*------------------------------------------------------------------*/
+/*  Procesas las operaciones Pendientes y genera Contabilidad       */
+/*  Genera registros en el Fa o PA                                  */
+/*  Acumular a los ficheros ASIBOLSA, CABEVI y DETEVI.              */
+/*------------------------------------------------------------------*/
+             PGM
+
+             DCL        VAR(&DATOS) TYPE(*CHAR) LEN(14) +
+                          VALUE('ANX1000CL')
+             DCL        VAR(&FECHA)   TYPE(*CHAR) LEN(6)
+             DCL        VAR(&TEX)     TYPE(*CHAR) LEN(50)
+             DCL        VAR(&NUMREG)  TYPE(*DEC)  LEN(10 0)
+             DCL        VAR(&NUMAPU)  TYPE(*CHAR) LEN(6)
+             DCL        VAR(&MSG) TYPE(*CHAR) LEN(300)
+/*----------------------------------------------------------------------*/
+             RTVSYSVAL  SYSVAL(QDATE) RTNVAR(&FECHA)
+
+             CHGJOB     DATE(&FECHA)
+/*------------------------------------------------------------------*/
+/*                CARGAR SEGUIMIENTO DE CL'S                      */
+/*------------------------------------------------------------------*/
+
+             CALL       PGM(EXPLOTA/TRACE3) PARM(&DATOS)
+
+             CALL       PGM(EXPLOTA/TRACE) PARM('COMIENZA PROCESO +
+                          ANX1000CL   ' ' ' 'ANX1000CL')
+
+             CRTPF      FILE(FICHEROS/FA_ANX) +
+                          SRCFILE(FICHEROS/QDDSSRC) +
+                          SRCMBR(FA) TEXT('FA - OPERACIONES DE ANEXOS') +
+                          OPTION(*NOLIST *NOSRC) +
+                          SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
+             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+                          FILE(FICHEROS/FA_ANX))
+
+             CRTPF      FILE(FICHEROS/PA_ANX) +
+                            SRCFILE(FICHEROS/QDDSSRC) +
+                            SRCMBR(PA) TEXT('PA - OPERACIONES DE ANEXOS') +
+                            OPTION(*NOLIST *NOSRC) +
+                            SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
+             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+                          FILE(FICHEROS/PA_ANX))
+
+             CRTPF      FILE(FICHEROS/ASIANEXOS) +
+                          SRCFILE(FICHEROS/QDDSSRC) +
+                          SRCMBR(ASIFILEN) TEXT('ASIENTO CONTABLE ANEXOS') +
+                          OPTION(*NOLIST *NOSRC) +
+                          SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
+             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+                          FILE(FICHEROS/ASIANEXOS))
+
+             CRTPF      FILE(FICHEROS/CABEANX) +
+                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(CABEVI) +
+                          TEXT('EVIDENCIA CABECERAS - ANEXOS') +
+                          OPTION(*NOLIST *NOSRC) +
+                          SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
+             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+                          FILE(FICHEROS/CABEANX))
+
+             CRTPF      FILE(FICHEROS/DETEANX) +
+                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(DETEVI) +
+                          TEXT('EVIDENCIA DETALLES - ANEXOS') +
+                          OPTION(*NOLIST *NOSRC) +
+                          SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
+             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+                          FILE(FICHEROS/DETEANX))
+
+             CHGVAR     VAR(&TEX) VALUE('ANX1000CL, ANTES DEL +
+                          PGM-ANX0100            ')
+
+             CALL       PGM(EXPLOTA/CONCOPCL) PARM(FA FICHEROS +
+                          FA LIBSEG1D 'C' ' ' ' ' &TEX ANX1000CL)
+/*------------------------------------------------------------------*/
+/* Activacion de Control de Compromiso                              */
+/*------------------------------------------------------------------*/
+             STRCMTCTL  LCKLVL(*ALL)
+/*------------------------------------------------------------------*/
+/* Generacion de Registros de Anexos                                */
+/*------------------------------------------------------------------*/
+             OVRDBF     FILE(ASIFILEN) TOFILE(ASIANEXOS)
+             CALL PGM(ANX0100) PARM(&NUMAPU)
+             MONMSG MSGID(CPF0000 RPG0000) EXEC(DO)
+            /* Si hay error, hacer rollback y salir del programa */
+              ROLLBACK
+              ENDCMTCTL
+
+              CHGVAR     VAR(&MSG) +
+              VALUE('** ERROR EN EL PROCESO DE ANEXOS (NUEVO) ** +
+              --> CLP.ANX1000CL')
+
+              SNDDST     TYPE(*LMSG) +
+             TOINTNET((GrupoAS400@dinersclub.es)) +
+             DSTD('ANEXOS: ACTUALIZACION DIARIA (SOLICITUDES)  ') +
+             LONGMSG(&MSG)
+
+              GOTO CMDLBL(ENDPGM)
+             ENDDO
+             /* Se actualiza los cambios si no hay errores */
+             COMMIT
+             ENDCMTCTL
+
+             DLTOVR     FILE(ASIFILEN)
+
+             RTVMBRD    FILE(FICHEROS/FA_ANX) NBRCURRCD(&NUMREG)
+             IF         COND(&NUMREG = 0) THEN(GOTO CMDLBL(FIN))
+
+/*----------------------------------------*/
+/* COPIAR FICHEROS PARCIALES A GENERALES*/
+/*----------------------------------------*/
+             CALL       PGM(EXPLOTA/TRACE) PARM('Copia de los +
+                          ficheros parciales a los generales y +
+                          copias de seguridad         ' ' ' ANX1000CL)
+
+             CPYF       FROMFILE(FICHEROS/CABEANX) +
+                          TOFILE(FICHEROS/CABEVI) MBROPT(*ADD) +
+                          FROMRCD(1) FMTOPT(*NOCHK)
+
+             CPYF       FROMFILE(FICHEROS/DETEANX) +
+                          TOFILE(FICHEROS/DETEVI) MBROPT(*ADD) +
+                          FROMRCD(1) FMTOPT(*NOCHK)
+
+             OVRDBF     FILE(ASIFILE) TOFILE(FICHEROS/ASIANEXOS)
+
+             CALL       PGM(EXPLOTA/ACASBON) PARM('047')
+
+             DLTOVR     FILE(ASIFILE)
+
+             CHGVAR     VAR(&TEX) VALUE('ANX1000CL, DESPUES DEL +
+                          PGM-ANX0100            ')
+
+             CALL       PGM(EXPLOTA/CONCOPCL) PARM(CABEANX FICHEROS +
+                          CABEANX LIBSEG1D 'C' ' ' ' ' &TEX ANX1000CL)
+
+             CALL       PGM(EXPLOTA/CONCOPCL) PARM(DETEANX FICHEROS +
+                          DETEANX LIBSEG1D 'C' ' ' ' ' &TEX ANX1000CL)
+
+             CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASIANEXOS FICHEROS +
+                          ASIANEXOS LIBSEG1D 'C' ' ' ' ' &TEX ANX1000CL)
+/*----------------------------------------*/
+
+             CALL       PGM(EXPLOTA/CONCOPCL) PARM((FA_ANX) +
+                          (FICHEROS) (FA_ANX) (LIBSEG1D) ('C') (' +
+                          ') (' ') (&TEX) (ANX1000CL))
+
+             CPYF       FROMFILE(FICHEROS/FA_ANX) TOFILE(FICHEROS/FA) +
+                          MBROPT(*ADD) FMTOPT(*NOCHK)
+
+/*=============================================================*/
+/*   23/5/2023 ELIMINAR SORT (SFA) QUE CLASIFICABA EL -FA-   */
+/*=============================================================*/
+
+             CRTLF      FILE(FICHEROS/SFA) SRCFILE(FICHEROS/QDDSSRC) +
+                          TEXT('LOGICO -FA- POR Nº.TARJETA Y CODIGO +
+                          OPERACION') OPTION(*NOLIST *NOSRC) +
+                          LVLCHK(*NO) AUT(*ALL)
+             MONMSG     MSGID(CPF0000)
+
+             RGZPFM     FILE(FICHEROS/FA) KEYFILE(FICHEROS/SFA SFA)
+
+             D1         LABEL(SFA) LIB(FICHEROS)
+
+/*==============================================================*/
+             CL1        LABEL(FA_ANX)
+
+            CHGVAR     VAR(&MSG) +
+              VALUE('** PROCESO DE ANEXOS (NUEVO) FINALIZO CORRECTAMENTE ** +
+              --> CLP.ANX1000CL')
+
+              SNDDST     TYPE(*LMSG) +
+             TOINTNET((GrupoAS400@dinersclub.es)) +
+             DSTD('ANEXOS: ACTUALIZACION DIARIA (SOLICITUDES)  ') +
+             LONGMSG(&MSG)
+/*-------------------------------------------------------------------*/
+ FIN:        CALL       PGM(EXPLOTA/TRACE) PARM(('FIN') (' ') +
+                          ('ANX1000CL'))
+ ENDPGM:     ENDPGM

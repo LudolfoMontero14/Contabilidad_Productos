@@ -67,6 +67,7 @@
              DCL        VAR(&PARAM)   TYPE(*CHAR) LEN(10) VALUE(' ')
              DCL        VAR(&CADENA)  TYPE(*CHAR) LEN(10) VALUE('FS01M')
              DCL        VAR(&NUMAPU) TYPE(*CHAR) LEN(6) VALUE(' ')
+             DCL        VAR(&NOMPARA) TYPE(*CHAR) LEN(10)
 
 /*-------------------------------------------------------------------*/
 /*    ARRANCAR EL TRACE                                              */
@@ -1217,9 +1218,9 @@ RE15:
              MONMSG     MSGID(CPF0000)
 
              CRTPF      FILE(FICHEROS/SAPNB_AUX) +
-                          SRCFILE(FICHEROS/QDDSSRC) TEXT('FICHERO +
-                          AUXILIAR CONDICIONES DE APLAZAMIENTO +
-                          TE''S') OPTION(*NOLIST *NOSRC) +
+                        SRCFILE(FICHEROS/QDDSSRC) +
+\	TEXT('FICHERO AUXILIAR CONDICIONES DE APLAZAMIENTO TE''S') +
+\	OPTION(*NOLIST *NOSRC) +
                           SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
              MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
                           FILE(FICHEROS/SAPNB_AUX))
@@ -3192,10 +3193,10 @@ VERECI:      CHGVAR     VAR(&ACCION) VALUE('C')
      /*    Nueva version del CEREFS (CEREFSN)             LM   */
      /*    PARALELO - Contabilidad por Producto                */
      /*--------------------------------------------------------*/
-
-             SBMJOB     CMD(CALL PGM(PARALELOC/CEREFSN_P) + 
-                        PARM(('FS01M'))) +
-                        JOB(CEREFSN_P) INLLIBL(PARALELOC EXPLOTA)
+             CALL PGM(EXPLOTA/CONTAB000) +
+                  PARM(('FS01M') +
+                       ('CEREFSN_P') +
+                       (&NOMPARA))
 
      /*--------------------------------------------------------*/
              CHGVAR     VAR(&TEX) VALUE('FS01, ANTES DE PGM-CEREFS')
@@ -3221,12 +3222,6 @@ VERECI:      CHGVAR     VAR(&ACCION) VALUE('C')
              MONMSG     MSGID(CPF0000) CMPDTA(*NONE) EXEC(CLRPFM +
                           FILE(FICHEROS/ASIRECFS))
 
-             /*CRTPF      FILE(FICHEROS/EVICEREFS) RCDLEN(132) +
-                          TEXT('PREVIO CABECERA EVIDENCIA +
-                          CONTABLE') OPTION(*NOLIST *NOSRC) +
-                          SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)*/
-             /*MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
-                          FILE(FICHEROS/EVICEREFS))*/
 
              /* Cambios al CEREFS                                  */
              CRTPF      FILE(FICHEROS/DETECERE) +
@@ -3352,24 +3347,15 @@ VERECI:      CHGVAR     VAR(&ACCION) VALUE('C')
              MONMSG     MSGID(CPF0000)
              /*------------------------------------------*/
 
-          /* DLTOVR     IMP00P10    */
+
 /*---*/
              CALLSUBR   SUBR(CUADRERECI)
 /*---*/
              D1         LABEL(RECIBL1) LIB(FICHEROS)
              D1         LABEL(RECIBL2) LIB(FICHEROS)
-    /*       DLTOVR     FILE(ASIFIVA ASIFILEN)    */
 
-/*------------------------------------------------*/
-/* PGM-EVIADDCL                                   */
-/*                                                */
-/* LA PARTE MASTERCARD NO SE HACE POR EVIADDCL    */
-/* Y SU ASIENTO NO ES POR ASIFIVA                 */
-/*------------------------------------------------*/
-             /*CALL       PGM(SUBRUDIN/EVIADDCL) PARM('EVICEREFS ' +
-                          'ASIRECFS  ' 'ACUMULACION DE RECIBOS A LA +
-                          BOLSA -BORECI-        ' 'FS01      ' +
-                          '      ' ' ')*/
+
+
              CHGJOB     DATE(&FECHA)
 /*-------------*/
              CALL       PGM(EXPLOTA/TRACE) PARM('+1' ' ' FS01) /* 56 */
@@ -3417,6 +3403,17 @@ VERECI:      CHGVAR     VAR(&ACCION) VALUE('C')
 
              ENDDO
 
+    /*------------------------------------------------------*/
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+             CALL       PGM(CONTAB102) +
+                        PARM('ASIRECFS'       +
+                            'CABECERE'        +
+                            'DETECERE'        +
+                            &NOMPARA          +
+                            'V'               +
+                            'P')
+
              CLRPFM FILE(FICHEROS/ASIRECFS)
              MONMSG MSGID(CPF0000)
 
@@ -3451,6 +3448,18 @@ VERECI:      CHGVAR     VAR(&ACCION) VALUE('C')
               CHGVAR VAR(&TEX) VALUE('FS01M, DESPUES DE PGM-ACASBON')
               CALL PGM(EXPLOTA/CONCOPCL) PARM(ASIRECFSMC FICHEROS +
                    ASIRECFSMC LIBSEG30D 'C' ' ' ' ' &TEX FS01)
+
+    /*------------------------------------------------------*/
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+             CALL       PGM(CONTAB102) +
+                        PARM('ASIRECFSMC'     +
+                            'CABEREMC'        +
+                            'DETEREMC'        +
+                            &NOMPARA          +
+                            'N'               +
+                            'P')
+
             ENDDO
 
             CLRPFM FILE(FICHEROS/ASIRECFSMC)
@@ -3599,9 +3608,7 @@ VERECI:      CHGVAR     VAR(&ACCION) VALUE('C')
              CALL       PGM(EXPLOTA/TRACE) PARM('. Recoger impreso y +
                           cuadrar -FSCREBO- con el TOTALES  +
                           "SDOS.COMPENSADOS -EU-"' ' ' FS01)
-             CALL       PGM(EXPLOTA/TRACE) PARM('. y +
-                          "TRANSFERENCIAS."                           -
-                           ' ' ' FS01)
+  CALL       PGM(EXPLOTA/TRACE) PARM('. y "TRANSFERENCIAS."' ' ' FS01)
              CHGJOB     DATE(&FECHA)
 /*-------------*/
 /* PGM-EVIADDCL*/
@@ -4080,10 +4087,8 @@ RE64:        CHGVAR     VAR(&TEX) VALUE('FS01, DESPUES DEL PGM-FSCREA')
 /*-------------------------------------*/
 /* LISTADO DETALLE ACCIONES DE RECOBRO */
 /*-------------------------------------*/
-             CALL       PGM(EXPLOTA/TRACE) PARM('PROGRAMA -RECO06- +
-                          EN +
-                          EJECUCION                                   -
-            ' ' ' FS01)
+  CALL       PGM(EXPLOTA/TRACE) +
+\	PARM('PROGRAMA -RECO06- EN EJECUCION' ' ' FS01)
              CRTPF      FILE(FICHEROS/PRIM.TXT) RCDLEN(132) +
                           OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
              MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
@@ -4106,9 +4111,8 @@ RE64:        CHGVAR     VAR(&TEX) VALUE('FS01, DESPUES DEL PGM-FSCREA')
 /*-------------------------------------*/
 /* PGM-RECO09, CON MSOCIO ACTUALIZADO  */
 /*-------------------------------------*/
-             CALL       PGM(TRACE) PARM('PROGRAMA -RECO09- EN +
-                          EJECUCION                                   -
-            ' ' ' FS01)
+  CALL       PGM(TRACE) +
+\	   PARM('PROGRAMA -RECO09- EN EJECUCION' ' ' FS01)
 
              CRTPF      FILE(FICHEROS/RECOBRO003) SRCMBR(RECOBRO001) +
                           TEXT('RECOBRO MICROINFORMATICA: +
@@ -4134,9 +4138,8 @@ RE64:        CHGVAR     VAR(&TEX) VALUE('FS01, DESPUES DEL PGM-FSCREA')
 /*-------------------------------------*/
 /*   PGM-RECO10_FPD (PAGO DIRECTO)     */
 /*-------------------------------------*/
-             CALL       PGM(TRACE) PARM('PROGRAMA -RECO10_FPD- EN +
-                          EJECUCION                                   -
-        ' ' ' FS01)
+  CALL PGM(TRACE) +
+\	\	PARM('PROGRAMA -RECO10_FPD- EN EJECUCION' ' ' FS01)
 
              CRTPF      FILE(FICHEROS/RECOBRO004) SRCMBR(RECOBRO002) +
                           TEXT('RECOBRO MICROINFORMATICA: +
@@ -4158,9 +4161,8 @@ RE64:        CHGVAR     VAR(&TEX) VALUE('FS01, DESPUES DEL PGM-FSCREA')
 /*-------------------------------------*/
 /* PGM-RECO10_FPB (PAGO POR BANCO)     */
 /*-------------------------------------*/
-             CALL       PGM(TRACE) PARM('PROGRAMA -RECO10_FPB- EN +
-                          EJECUCION                                   -
-        ' ' ' FS01)
+  CALL  PGM(TRACE) +
+\	\	PARM('PROGRAMA -RECO10_FPB- EN EJECUCION ' ' ' FS01)
 
              OVRDBF     FILE(MSOCIOXX) TOFILE(FICHEROS/MSOCIO88)
              CALL       PGM(EXPLOTA/RECO10_FPB)
@@ -4360,15 +4362,13 @@ RE64:        CHGVAR     VAR(&TEX) VALUE('FS01, DESPUES DEL PGM-FSCREA')
              CALL       PGM(EXPLOTA/TRACE) PARM('* En ese caso +
                           debeis tener un aviso producido por el +
                           pgm-acupacl en el que se' ' ' FS01)
-             CALL       PGM(EXPLOTA/TRACE) PARM('* comenta este +
-                          hecho.                                      -
-                   ' ' ' FS01)
+  CALL       PGM(EXPLOTA/TRACE) +
+\	\	PARM('* comenta este hecho.' ' ' FS01)
              CALL       PGM(EXPLOTA/TRACE) PARM('* Por lo tanto al +
                           pulsar intro se ejecutara el pgm-acupacl2 +
                           para que dicho    ' ' ' FS01)
-             CALL       PGM(EXPLOTA/TRACE) PARM('* PAPRE se acumule +
-                          ahora.                                      -
-              ' ' ' FS01)
+  CALL PGM(EXPLOTA/TRACE) +
+\	\	PARM('* PAPRE se acumule ahora.' ' ' FS01)
 
 
              CALL       PGM(EXPLOTA/ACUPACL2M) PARM(&FECHA)

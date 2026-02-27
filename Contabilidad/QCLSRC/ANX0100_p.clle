@@ -7,18 +7,18 @@ PGM (&NomProc &NOMENV)
     /* Asiento traspaso pa a fa Diners/MC                   */
     /*------------------------------------------------------*/
     CALL       PGM(PARALELOC/FSPAFAN) +
-               PARM('ASIPAFAN'      +
-                    'CABEPAFA'        +
-                    'DETEPAFA'        +
+               PARM('ASIANEXOS'       +
+                    'CABEANX'         +
+                    'DETEANX'         +
                     &NUMAPU)
 
     /*------------------------------------------------------*/
     /* Copia de Registros a Historicos                      */
     /*------------------------------------------------------*/
-    CALL       PGM(CONTAB102) +
-               PARM('ASIPAFAN'      +
-                    'CABEPAFA'        +
-                    'DETEPAFA'        +
+    CALL       PGM(CONTAB102)        +
+               PARM('ASIANEXOS'      +
+                    'CABEANX'        +
+                    'DETEANX'        +
                     &NOMENV           +
                     'N')
 
@@ -27,9 +27,9 @@ PGM (&NomProc &NOMENV)
     /*-------------------------------------------------------*/
     Call CONTAB101 Parm(&NomProc      +
                     'FSPAFAN'         +
-                    'ASIPAFAN'      +
-                    'CABEPAFA'        +
-                    'DETEPAFA'        +
+                    'ASIANEXOS'      +
+                    'CABEANX'        +
+                    'DETEANX'        +
                     &NUMAPU           +
                     &NOMENV)
     /*--------------------------------*/

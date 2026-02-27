@@ -16,6 +16,7 @@
                           /* para selbacl */
              DCL        VAR(&REST1)  TYPE(*CHAR) LEN(10)
              DCL        VAR(&NUMREG) TYPE(*DEC)  LEN(10 0)
+             DCL        VAR(&NOMPARA) TYPE(*CHAR) LEN(10)
 /*-------------------------------------------------------------------*/
 /*--         RECUPERAR VALORES Y CEBAR VARIABLES                   --*/
 /*-------------------------------------------------------------------*/
@@ -199,13 +200,13 @@
                           ejecucion                    ' ' ' FS02)
 
      /*--------------------------------------------------------*/
-     /*    Nueva version del FSPAFA (Actualizacion)       LM   */
-     /*    PARALELO                                            */
+     /*    Nueva version del FSPAFAN (Actualizacion)       LM  */
+     /*    PARALELO - Contabilidad por Producto                */
      /*--------------------------------------------------------*/
-
-             SBMJOB     CMD(CALL PGM(Paraleloc/FSPAFAN_P) + 
-                        PARM(('FS02M'))) +
-                          JOB(FSPAFAN_P) INLLIBL(PARALELOC EXPLOTA)
+             CALL PGM(EXPLOTA/CONTAB000) +
+                  PARM(('FS02M') +
+                       ('FSPAFAN_P') +
+                       (&NOMPARA))
 
      /*--------------------------------------------------------*/
 
@@ -276,6 +277,17 @@
                         CABEPAFA LIBSEG30D C ' ' ' ' &TEX FS02)
               CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASIPAFAN FICHEROS +
                         ASIPAFAN LIBSEG30D C ' ' ' ' &TEX FS02)
+
+    /*------------------------------------------------------*/
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+             CALL       PGM(CONTAB102) +
+                        PARM('ASIPAFAN'       +
+                            'CABEPAFA'        +
+                            'DETEPAFA'        +
+                            &NOMPARA          +
+                            'N'               +
+                            'P')
 
              ENDDO
          /*--------------------------------------------------------*/
@@ -443,6 +455,28 @@ NOCOPIA:
              CHGJOB     DATE(&FECHA)
              CALL       PGM(EXPLOTA/TRACE) PARM('+1' ' ' FS02) /* 08 */
 /*-------------------------------------------------------------------*/
+/*--              RECOBRO ENTRE PROCESOS -TARJETONES-              --*/
+/*-- APG: MODIFICAMOS SBMJOBCL Y TRASLADAMOS ESTAS LINEAS AQUI     --*/
+/*-- POR CASQUE EN PROCESO NEGR05 Y ERROR FA-CONTROFA              --*/
+/*-------------------------------------------------------------------*/
+             CRTPF      FILE(FICHEROS/VIDEONUR) RCDLEN(1000) +
+                          TEXT('cartas video Negro05') +
+                          OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
+                          LVLCHK(*NO) AUT(*ALL)
+             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+                          FILE(FICHEROS/VIDEONUR))
+
+             CALL       PGM(EXPLOTA/NEGR05)
+
+             CPYF       FROMFILE(FICHEROS/VIDEONUR) +
+                          TOFILE(FICHEROS/VIDEO) MBROPT(*ADD) +
+                          FMTOPT(*NOCHK)
+
+             CHGVAR     VAR(&TEX) VALUE('SBMJOBCL, despues +
+                          pgm-negr05        ')
+             CALL       PGM(EXPLOTA/CONCOPCL) PARM(VIDEONUR FICHEROS +
+                          VIDEONUR LIBSEG1D M ' ' ' ' &TEX FS01)
+/*-------------------------------------------------------------------*/
 /*--        GRUPO DE SBMJOB INTEGRADOS EN ESTE CL -SBMJOBCL-       --*/
 /*-------------------------------------------------------------------*/
  RE8:        SBMQBATCH  NOMJOB(FS0201) FECPRO(&FECHA) DESBRE('grupo +
@@ -521,8 +555,7 @@ NOCOPIA:
 /*--------*/
 /* COPIAS */
 /*--------*/
-             CHGVAR     VAR(&REST1) VALUE('BSCIN' *CAT %SUBSTRING+
-                        (&FECHA 1 4))
+    CHGVAR     VAR(&REST1) VALUE('BSCIN' *CAT %SUBSTRING(&FECHA 1 4))
              CHGVAR     VAR(&TEX) VALUE('FS02, DESPUES DE ACUMULAR +
                           BSFACINNO/BSFACINLA')
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(BSFACIN FICHEROS +

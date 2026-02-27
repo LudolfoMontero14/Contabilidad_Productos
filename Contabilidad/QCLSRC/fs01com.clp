@@ -2024,12 +2024,10 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
      /*    Nueva version del CEREFS (CEREFSN)             LM   */
      /*    PARALELO - Contabilidad por Producto                */
      /*--------------------------------------------------------*/
-
-             CALL PGM(PARALELOC/CEREFSN_P) +
+             CALL PGM(EXPLOTA/CONTAB000) +
                   PARM(('FS01COM') +
                        ('CEREFSN_P') +
                        (&NOMPARA))
-
      /*--------------------------------------------------------*/
              CHGVAR     VAR(&TEX) VALUE('FS01CO, ANTES DE PGM-CEREFS')
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(BORECI FICHEROS +
@@ -2111,13 +2109,6 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
     /*       CALL       PGM(EXPLOTA/TRACE) PARM(' ' ' ' ' ')    */
 
  /* ========================================================== */
-/*-------------*/
-/* PGM-EVIADDCL*/
-/*-------------*/
-            /* CALL       PGM(SUBRUDIN/EVIADDCL) PARM('EVICEREFS ' +
-                          'ASIRECFS  ' 'ACUMULACION DE RECIBOS A LA +
-                          BOLSA -BORECI-        ' 'FS01CO    ' +
-                          '      ' ' ')*/
              CHGJOB     DATE(&FECHA)
              RTVMBRD FILE(FICHEROS/ASIRECFS) NBRCURRCD(&NUMREG)
              IF COND(&NUMREG > 0) THEN(DO)
@@ -2152,13 +2143,14 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
     /*------------------------------------------------------*/
     /* Copia de Registros a Historicos                      */
     /*------------------------------------------------------*/
-    CALL       PGM(CONTAB102)         +
-               PARM('ASIRECFS'        +
-                    'V'               +
-                    'CABECERE'        +
-                    'DETECERE'        +
-                    'FICHEROS')           
-
+             CALL       PGM(CONTAB102) +
+                        PARM('ASIRECFS'       +
+                            'CABECERE'        +
+                            'DETECERE'        +
+                            &NOMPARA          +
+                            'V'               +
+                            'P')
+     /*--------------------------------------------------------*/
              Clrpfm  Ficheros/ASIRECFS
                    ENDDO
 
@@ -2172,27 +2164,15 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
                           LVLCHK(*NO) AUT(*ALL)
              MONMSG     MSGID(CPF0000) CMPDTA(*NONE) EXEC(CLRPFM +
                           FILE(FICHEROS/ASIRECFS2))
-/*-------------------*/
-/*- CAMBIO DE FECHA -*/
-/*-------------------*/
-             /*OVRDBF     FILE(ASIFILE) TOFILE(FICHEROS/ASIRECFS)*/
-             /*CALL       PGM(EXPLOTA/FCTIME)*/
-             /*DLTOVR     FILE(ASIFILE)*/
-
-             /*OVRDBF     FILE(ASIFIVA) TOFILE(FICHEROS/ASIRECFS)*/
-             /*OVRDBF     FILE(ASIFILE) TOFILE(FICHEROS/ASIRECFS2)*/
-             /*CALL       PGM(EXPLOTA/ASICO2)*/
 
              CALL       PGM(EXPLOTA/TRACE) PARM('PROGRAMA ACASBO EN +
                           EJECUCION.' ' ' FS01CO)
 
-             /*CALL       PGM(EXPLOTA/ACASBO) PARM('002')*/
 
              CALL       PGM(EXPLOTA/TRACE) PARM('Comprobar que se +
                           han acumulado al totales los asientos de +
                           los recibos y que  ' ' ' FS01CO)
 
-           /*DLTOVR     FILE(ASIFILE ASIFIVA)  */
 
              CALL       PGM(EXPLOTA/TRACE) PARM('+1' ' ' FS01CO) /*45*/
 /*-------------------------------------------------------------------*/
@@ -2740,14 +2720,13 @@ RE54:        CHGVAR     VAR(&TEX) VALUE('FS01CO, DESPUES DEL +
 
 
      /*--------------------------------------------------------*/
-     /*    Nueva version del FSPAFA (Actualizacion)       LM   */
-     /*    PARALELO                                            */
+     /*    Nueva version del FSPAFAN (Actualizacion)       LM  */
+     /*    PARALELO - Contabilidad por Producto                */
      /*--------------------------------------------------------*/
-
-             SBMJOB     CMD(CALL PGM(Paraleloc/FSPAFAN_P) +
-                        PARM(('FS01COM'))) +
-                          JOB(FSPAFAN_P) INLLIBL(PARALELOC EXPLOTA)
-
+             CALL PGM(EXPLOTA/CONTAB000) +
+                  PARM(('FS01COM') +
+                       ('FSPAFAN_P') +
+                       (&NOMPARA))
      /*--------------------------------------------------------*/
 
      /*--------------------------------------------------------*/
@@ -2813,7 +2792,16 @@ RE54:        CHGVAR     VAR(&TEX) VALUE('FS01CO, DESPUES DEL +
                         CABEPAFA LIBSEG1D C ' ' ' ' &TEX FS01CO)
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASIPAFAN FICHEROS +
                         ASIPAFAN LIBSEG1D C ' ' ' ' &TEX FS01CO)
-
+    /*------------------------------------------------------*/
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+             CALL       PGM(CONTAB102) +
+                        PARM('ASIPAFAN'       +
+                            'CABEPAFA'        +
+                            'DETEPAFA'        +
+                            &NOMPARA          +
+                            'N'               +
+                            'P')
              ENDDO
          /*--------------------------------------------------------*/
 
@@ -2972,12 +2960,12 @@ RE63:        CHKOBJ     OBJ(FICHEROS/PAPRE) OBJTYPE(*FILE)
              CALL       PGM(EXPLOTA/TRACE) PARM(('* EN ESE CASO +
                           DEBEIS TENER UN AVISO PRODUCIDO POR EL +
                           PGM-ACUPACL EN EL QUE SE') (' ') (FS01CO))
-             CALL       PGM(EXPLOTA/TRACE) PARM(('* COMENTA ESTE HECHO.') + 
+             CALL       PGM(EXPLOTA/TRACE) PARM(('* COMENTA ESTE HECHO.') +
              (' ') (FS01CO))
              CALL       PGM(EXPLOTA/TRACE) PARM(('* POR LO TANTO AL +
                           PULSAR INTRO SE EJECUTARA EL PGM-ACUPACL2 +
                           PARA QUE DICHO    ') (' ') (FS01CO))
-             CALL       PGM(EXPLOTA/TRACE) PARM(('* PAPRE SE ACUMULE + 
+             CALL       PGM(EXPLOTA/TRACE) PARM(('* PAPRE SE ACUMULE +
                           AHORA.') (' ') (FS01CO))
 
 
@@ -3008,7 +2996,7 @@ RE63:        CHKOBJ     OBJ(FICHEROS/PAPRE) OBJTYPE(*FILE)
 
              CPYF       FROMFILE(FICHEROS/BSFACINLA) +
                           TOFILE(FICHEROS/BSFACIN) MBROPT(*ADD) +
-                          FROMRCD(1) FMTOPT(*NOCHK) 
+                          FROMRCD(1) FMTOPT(*NOCHK)
              MONMSG     MSGID(CPF0000)
 /*--------*/
 /* COPIAS */
@@ -3485,7 +3473,10 @@ RE70:        D1         LABEL(BSFSFAPA)  LIB(FICHEROS)
 /*-------------------------------------------------------------------*/
 /*                            F I N                                  */
 /*-------------------------------------------------------------------*/
- FINFIN:     CALL       PGM(EXPLOTA/TRACE) PARM('FIN    GUARDA ' ' ' +
+ FINFIN:     DSPJOBLOG  OUTPUT(*OUTFILE) +
+                          OUTFILE(LJMONTERO/FS01COMJOB) +
+                          OUTMBR(*FIRST *ADD)
+             CALL       PGM(EXPLOTA/TRACE) PARM('FIN    GUARDA ' ' ' +
                           'FS01CO')
 /********************************************************************/
 /* GRABAR INCIDENCIA                                                */
