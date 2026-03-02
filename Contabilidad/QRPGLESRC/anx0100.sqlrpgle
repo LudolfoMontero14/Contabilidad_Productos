@@ -59,7 +59,7 @@
   // Array / Matriz que totaliza importes por productos
   dcl-ds Acumulador likeds(AcumuladorTpl) Dim(100) Inz;
 
-  dcl-ds dsSocio     likeDs(dsT_MSOCIOTpl) inz;
+  //dcl-ds dsSocio     likeDs(dsT_MSOCIOTpl) inz;
   // --------------------------
   // Declaracion de Variables
   // --------------------------
@@ -68,7 +68,6 @@
   dcl-s WTot_IdAnexo  zoned(10:2);
   Dcl-s AMDSYS        Zoned(8);
   Dcl-s WLin          Zoned(5);
-  Dcl-s WIndice       Zoned(5);
   Dcl-s fecproces    Zoned(8);
   Dcl-s WInd         Zoned(3);
   Dcl-s WIDCONTAB    Zoned(5);  
@@ -87,12 +86,16 @@
   Dcl-s WNomCabpar Char(10);
   Dcl-s WNomDetPar Char(10);
   Dcl-s WApunte      Char(6);
+  dcl-s WCODPRO      Zoned(3);
+  dcl-s WSMOCTA      char(2);
+  dcl-s WSNOMBR      char(35);
+  dcl-s WSNOMEM      Char(30);
 
   // --------------------------
   // Declaracion de Cursores
   // --------------------------
   Exec Sql
-    SET OPTION Commit = *chg,
+    SET OPTION Commit = *none,      // EN PRUEBA ES *NONE
             CloSqlCsr = *endmod,
             AlwCpyDta = *yes;
 
@@ -132,7 +135,6 @@
     dcl-s WSum_Res     char(1);
     dcl-s WID_Anexo    Zoned(9);
     dcl-s CabeceraEvid Ind;
-    dcl-s WCODPRO      Zoned(3);
 
     WNomAsiPar = P_NomAsiPar;
     WNomCabpar = P_NomCabpar;
@@ -171,7 +173,7 @@
       If WID_Anexo <> dsANXSOLANX.ID_Anexo;
 
         If WTot_IdAnexo<>0;
-          WIDCONTAB = WID_Anexo;
+          WIDCONTAB = dsANXCATALG.Id_Contab;
           // Genera Asiento Contable
           CONTABSRV_Genera_Contabilidad_Totales_Producto(
             Acumulador      // Arreglo de Totales por Producto
@@ -188,7 +190,7 @@
         Reset Acumulador;
         WID_Anexo    = dsANXSOLANX.ID_Anexo;
         WTot_IdAnexo = 0;
-        WIndice      = 0;
+        WInd         = 0;
         //Impresion de cabecera de Tipo de Anexo
         Inserta_Cebecera_Evi_Det(WID_Anexo);
       EndIf;
@@ -207,8 +209,8 @@
       ;
 
       Exec SQL
-        Select SCODPR  
-          Into :WCODPRO
+        Select SMOCTA, SNOMBR, SNOMEM, SCODPR  
+          Into :WSMOCTA, :WSNOMBR, :WSNOMEM, :WCODPRO
         From T_MSOCIO
         Where
           NUREAL= :dsANXSOLANX.nureal;
@@ -224,36 +226,36 @@
 
       WTot_IdAnexo += dsANXSOLANX.Importe;
 
-      Reset dsSocio;
-      Exec SQL
-        Select
-          SNUSO1, NUREAL, SNUSO2, SCUOTE, SNOMBR, SDOMIC, CODPOS, PROTG1,
-          SLOCAL, SAPEPM, PROTG2, ZONA, SCARNE, SEXTTE, SLIBR0, SEXENT,
-          SLIBR1, SFSTAT, SNOMEM, SNOMBA, SDOMBA, SLOCBA, SZOBAN,SNCTAC,
-          SMCTAC, SFPAGO, SCONSO, SCONPM, SNOMPM, SDUPEX, SOFESE, SMESCU,
-          SCOBHA, SCLTLF, STELEF, STVPER, SMYGAS, SFMGAS, SCLDNI, SCONBA,
-          SNIDEM, SPLAST, SCODPO, SCODVI, SMOTBA, NBANCO, SNOREN, SOPCAM,
-          SGTEXT, SLIBR2, SNOATM, SSEXO, SOFEPM, SACREC, SMOCTA, SEXNIF,
-          SF1STA, SCLPRO,SCONCU,SDIAPA,SSUBHA,SLIBR3,SFREC1,SIMPR1,SLIBR4,
-          SFREC2,SIMPR2,SLIBR5,SFREC3,SIMPR3,SLIBR6,SFREC4,SIMPR4,
-          SCODEV,SFDEVO,SNOGTS,SLICRE,SACREB,SLIBR7,SCORDV,SREANT,
-          SACDNI,SMESRE,SDIAPR,SCLIEX,SNUIDE,SVARTR,SCODNT,STATUS,
-          SNNIF,SCATEM,SSALAN,SRECAU,SHNORE,SDEVIM,SDNODI,SOPSER,
-          SIMNSE,SOPINT,SIMINT,SDIFAL,SDIRES,SOPRPM,SIMPPM,SIMPAP,
-          SOPNCO,SIMNCO,SANACI,SPREFI,SCOPER,SAÑVPM,SVIGPM,SVIPMÑ,
-          SPODER,S@,SAUSEO,SAUSER,SAUCAO,SAUCAL,SINFLE,SIN10C,
-          SINFFA,SIMPPA,SACC3,SREGEM,SSEGTA,SLIBR8,SAPECA,SAUTIN,
-          SAUTOT,SAUINO,SAUOTO,SPORCE,SMOFAC,STIPRE,SPORAN,SPENOF,
-          SPIN, SMUSCA,SLIBR9,SFNCAJ,SBCHRE,SINGRE,SALTPM,SVIGTR,
-          SFACRB,SCODPR,SOFFSET
-        Into :dsSocio
-        From T_MSOCIO
-        Where
-          NUREAL = :dsANXSOLANX.NUREAL
-      ;
+      // Reset dsSocio;
+      // Exec SQL
+      //   Select
+      //     SNUSO1, NUREAL, SNUSO2, SCUOTE, SNOMBR, SDOMIC, CODPOS, PROTG1,
+      //     SLOCAL, SAPEPM, PROTG2, ZONA, SCARNE, SEXTTE, SLIBR0, SEXENT,
+      //     SLIBR1, SFSTAT, SNOMEM, SNOMBA, SDOMBA, SLOCBA, SZOBAN,SNCTAC,
+      //     SMCTAC, SFPAGO, SCONSO, SCONPM, SNOMPM, SDUPEX, SOFESE, SMESCU,
+      //     SCOBHA, SCLTLF, STELEF, STVPER, SMYGAS, SFMGAS, SCLDNI, SCONBA,
+      //     SNIDEM, SPLAST, SCODPO, SCODVI, SMOTBA, NBANCO, SNOREN, SOPCAM,
+      //     SGTEXT, SLIBR2, SNOATM, SSEXO, SOFEPM, SACREC, SMOCTA, SEXNIF,
+      //     SF1STA, SCLPRO,SCONCU,SDIAPA,SSUBHA,SLIBR3,SFREC1,SIMPR1,SLIBR4,
+      //     SFREC2,SIMPR2,SLIBR5,SFREC3,SIMPR3,SLIBR6,SFREC4,SIMPR4,
+      //     SCODEV,SFDEVO,SNOGTS,SLICRE,SACREB,SLIBR7,SCORDV,SREANT,
+      //     SACDNI,SMESRE,SDIAPR,SCLIEX,SNUIDE,SVARTR,SCODNT,STATUS,
+      //     SNNIF,SCATEM,SSALAN,SRECAU,SHNORE,SDEVIM,SDNODI,SOPSER,
+      //     SIMNSE,SOPINT,SIMINT,SDIFAL,SDIRES,SOPRPM,SIMPPM,SIMPAP,
+      //     SOPNCO,SIMNCO,SANACI,SPREFI,SCOPER,SAÑVPM,SVIGPM,SVIPMÑ,
+      //     SPODER,S@,SAUSEO,SAUSER,SAUCAO,SAUCAL,SINFLE,SIN10C,
+      //     SINFFA,SIMPPA,SACC3,SREGEM,SSEGTA,SLIBR8,SAPECA,SAUTIN,
+      //     SAUTOT,SAUINO,SAUOTO,SPORCE,SMOFAC,STIPRE,SPORAN,SPENOF,
+      //     SPIN, SMUSCA,SLIBR9,SFNCAJ,SBCHRE,SINGRE,SALTPM,SVIGTR,
+      //     SFACRB,SCODPR,SOFFSET
+      //   Into :dsSocio
+      //   From T_MSOCIO
+      //   Where
+      //     NUREAL = :dsANXSOLANX.NUREAL
+      // ;
 
       If dsANXCATALG.Destino = 'F';
-        Inserta_Detalle_Evi(dsANXCATALG:dsANXSOLANX:dsSocio);
+        Inserta_Detalle_Evi(dsANXCATALG:dsANXSOLANX);
         //Genera_Reg_Descripcion(dsANXCATALG:dsANXSOLANX:dsSocio);
 
         Exec SQL
@@ -458,7 +460,7 @@
     dcl-pi *n;
       dsANXCATALG likeDS(dsANXCATALGTpl);
       dsANXSOLANX likeDs(dsANXSOLANXTpl);
-      dsSocio      likeDs(dsT_MSOCIOTpl);
+      //dsSocio      likeDs(dsT_MSOCIOTpl);
     end-pi;
 
     Dcl-s WReg     Char(132);
@@ -481,20 +483,20 @@
         Into :WNomProd
       From Productos
       Where
-        CODIGO_PRODUCTO=:dsSocio.SCODPR;
+        CODIGO_PRODUCTO=:WCODPRO;
 
     If Sqlcode<>0;
         WNomProd = 'Producto No Definido';
     EndIf;
-    dsDetalEvi.NumReal = %Editw(dsSocio.NUREAL:'    -    ');
-    If dsSocio.SMOCTA = 'PI' Or dsSocio.SMOCTA = 'PE';
-      dsDetalEvi.NomSoc  = dsSocio.SNOMBR;
+    dsDetalEvi.NumReal = %Editw(dsANXSOLANX.NUREAL:'    -    ');
+    If WSMOCTA = 'PI' Or WSMOCTA = 'PE';
+      dsDetalEvi.NomSoc  = WSNOMBR;
     Else;
-      dsDetalEvi.NomSoc  = dsSocio.SNOMEM;
+      dsDetalEvi.NomSoc  = WSNOMEM;
     EndIf;
 
     dsDetalEvi.ImpCuo  = %Editc(dsANXSOLANX.Importe:'2');
-    dsDetalEvi.DesAnx  = %editc(dsSocio.SCODPR:'X') + ' - ' + %trim(WNomProd);
+    dsDetalEvi.DesAnx  = %editc(WCODPRO:'X') + ' - ' + %trim(WNomProd);
 
     dsDetevi.lineaTexto = dsDetalEvi;
     numeroLinea += 1;

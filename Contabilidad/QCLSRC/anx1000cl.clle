@@ -29,6 +29,16 @@
              CALL       PGM(EXPLOTA/TRACE) PARM('COMIENZA PROCESO +
                           ANX1000CL   ' ' ' 'ANX1000CL')
 
+     /*--------------------------------------------------------*/
+     /*    Nueva version del ANX0100 (Actualizacion)       LM  */
+     /*    PARALELO - Contabilidad por Producto                */
+     /*--------------------------------------------------------*/
+             CALL PGM(EXPLOTA/CONTAB000) +
+                  PARM(('ANX1000CL') +
+                       ('ANX0100_P') +
+                       (&NOMPARA))
+     /*--------------------------------------------------------*/
+
              CRTPF      FILE(FICHEROS/FA_ANX) +
                           SRCFILE(FICHEROS/QDDSSRC) +
                           SRCMBR(FA) TEXT('FA - OPERACIONES DE ANEXOS') +
@@ -149,6 +159,17 @@
              CPYF       FROMFILE(FICHEROS/FA_ANX) TOFILE(FICHEROS/FA) +
                           MBROPT(*ADD) FMTOPT(*NOCHK)
 
+    /*------------------------------------------------------*/
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+             CALL       PGM(CONTAB102)       +
+                        PARM('ASIANEXOS'     +
+                            'CABEANX'        +
+                            'DETEANX'        +
+                            &NOMPARA         +
+                            'N'              +
+                            'P')
+    /*--------------------------------------------------------*/
 /*=============================================================*/
 /*   23/5/2023 ELIMINAR SORT (SFA) QUE CLASIFICABA EL -FA-   */
 /*=============================================================*/

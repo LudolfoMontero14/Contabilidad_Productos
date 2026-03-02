@@ -57,20 +57,22 @@
 
     dcl-pi *n;
       P_NomProc     Char(10) ;
+      P_NomPgm      Char(10) ;
       P_NomAsiPar   Char(10) ;
       P_NomCabpar   Char(10) ;
       P_NomDetPar   Char(10) ;
       P_NumApunte   Char( 6) ;
-      P_NomPgm      Char(10) ;
+      P_NomENV      Char(10) ;
     end-pi;
 
     CONTABSRV_Registro_Auditoria_Paralelo(
-          P_NomProc            // Proceso que Ejecuta
-          :P_NomPgm            // Proceso Actual 'FSPAFAN'
+          P_NomProc            // Proc Ejcuta Ej. FS01COM, FS01M....
+          :P_NomPgm            // Proceso Contb. Eje CEREFSN, FSPAFAN
           :P_NumApunte         // Numero de Apunte
           :P_NomAsiPar         // Nombre Asifilen Parcial
           :P_NomCabpar         // Nombre Cabevi Parcial
           :P_NomDetPar         // Nombre Detevi Parcial
+          :P_NomENV            // Nombre del ambiente Paralelo
       );
 
     *inlr = *on;

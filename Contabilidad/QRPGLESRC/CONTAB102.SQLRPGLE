@@ -11,7 +11,7 @@
   //
   // ------------------------------------------------------------------------
   // Notas:
-  //  * 
+  //  *
   //
   // ------------------------------------------------------------------------
   ctl-opt option(*srcstmt : *nodebugio : *noexpdds)
@@ -56,20 +56,31 @@
 
     dcl-pi *n;
       P_NomAsiPar   Char(10) ; // Nombre del fichero Parcial Asifilen
-      P_AsiNew      Char(1) ;  // V=ASIFILE, N=ASIFILEN
       P_NomCabpar   Char(10) ; // Nombre del fichero Parcial Cabevi
       P_NomDetPar   Char(10) ; // Nombre del fichero Parcial Detevi
       P_NomEnv      Char(10) ; // Nombre del ambiente Paralelo
+      P_AsiNew     Char(1) ;  // Flag determina si es Asifile o Asifilen
+                               // N=ASIFILEN, V=ASIFILE
+      P_Origen_data Char(1); // P=Producción, T=Test (Paralelo)
     end-pi;
 
     Dcl-s SqlStr      VarChar(2000);
     Dcl-s WUser       VarChar(10) Inz(*User);
     Dcl-s WTot_reg    Zoned(5);
+    Dcl-s WCamBlan    Char(5) Inz('     ');
+    Dcl-s WLibOrigen  Char(10);
 
+    WCamBlan = WComi + ' ' + WComi;
 
-    SqlStr = 
+    If P_Origen_data = 'T';
+      WLibOrigen = P_NomEnv;
+    Else;
+      WLibOrigen = 'FICHEROS';
+    EndIf;
+
+    SqlStr =
       'SELECT COUNT(*) '                                           +
-      ' From ' + %Trim(P_NomEnv) + '.' + %Trim(P_NomAsiPar);    
+      ' From ' + %Trim(WLibOrigen) + '.' + %Trim(P_NomAsiPar);
 
     exec sql prepare SX0 from :SqlStr;
 
@@ -80,7 +91,7 @@
     exec sql fetch C1 into :WTot_reg;
 
     If sqlStt <> '00000';
-      observacionSql = 'Error al determinar total de Registros ' + 
+      observacionSql = 'Error al determinar total de Registros ' +
         %Trim(P_NomAsiPar);
 
       Clear Nivel_Alerta;
@@ -93,7 +104,7 @@
     exec sql close C1;
 
     If WTot_reg = 0;
-      observacionSql = 'No se Generaraon Registros en el ' + 
+      observacionSql = 'No se Generaraon Registros en el ' +
         %Trim(P_NomAsiPar);
       Clear Nivel_Alerta;
       Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
@@ -102,31 +113,56 @@
 
     // ******************************************************
     // ** Copia al ASIFILEN_HIS_TABLE del parcial generado **
-    SqlStr = 
-      'INSERT INTO '                                               +
-      'FICHEROS.ASIFILEN_HIS_TABLE '                               +
-      '(CAPUNT, CCTAMA, CCTAFI, CCTAAU, CCODIG, CPROGR, CFECON, '  +
-      'CDEHA, CREFOP, CFEVTO, CCONCE, CIMPOR, CMONED, CPROVI, '    +
-      'CTIPOP, CTIPRO, CCTANA, CCODMA, CREFDE, CDDEPT, CDANLT, '   +
-      'CDEBAN, CDPERS, CDGFIN, CDIM06, CDIM07, CDIM08, CDNAMEENV, '+
-      'CDEFEC_CREA, CDEUSR_CREA ) '                                +
+    If P_AsiNew = 'N';
 
-      'SELECT '                                                    +
-      'CAPUNT, CCTAMA, CCTAFI, CCTAAU, CCODIG, CPROGR, CFECON, '   +
-      'CDEHA, CREFOP, CFEVTO, CCONCE, CIMPOR, CMONED, CPROVI, '    +
-      'CTIPOP, CTIPRO, CCTANA, CCODMA, CREFDE, CDDEPT, CDANLT, '   + 
-      'CDEBAN, CDPERS, CDGFIN, CDIM06, CDIM07, CDIM08, '           +
-      %Trim(P_NomEnv) + ', current Timestamp, '                    +
-      %trim(WUser) +
-      ' From ' + %Trim(P_NomEnv) + '.' + %Trim(P_NomAsiPar);    
+      SqlStr =
+        'INSERT INTO '                                               +
+        'PARALELOC.ASIFILEN_HIS_TABLE '                              +
+        '(CAPUNT, CCTAMA, CCTAFI, CCTAAU, CCODIG, CPROGR, CFECON, '  +
+        'CDEHA, CREFOP, CFEVTO, CCONCE, CIMPOR, CMONED, CPROVI, '    +
+        'CTIPOP, CTIPRO, CCTANA, CCODMA, CREFDE, CDDEPT, CDANLT, '   +
+        'CDEBAN, CDPERS, CDGFIN, CDIM06, CDIM07, CDIM08, '           +
+        'Origen_Data, CDNAMEENV, CDEFEC_CREA, CDEUSR_CREA ) '        +
 
+        'SELECT '                                                    +
+        'CAPUNT, CCTAMA, CCTAFI, CCTAAU, CCODIG, CPROGR, CFECON, '   +
+        'CDEHA, CREFOP, CFEVTO, CCONCE, CIMPOR, CMONED, CPROVI, '    +
+        'CTIPOP, CTIPRO, CCTANA, CCODMA, CREFDE, CDDEPT, CDANLT, '   +
+        'CDEBAN, CDPERS, CDGFIN, CDIM06, CDIM07, CDIM08, '           +
+        WComi + %Trim(P_Origen_data) + WCOMI + ', '                  +
+        WComi + %Trim(P_NomEnv) + WCOMI + ', current Timestamp, '    +
+        WComi + %trim(WUser) + WComi                                 +
+        ' From ' + %Trim(WLibOrigen) + '.' + %Trim(P_NomAsiPar);
+    Else;
+      SqlStr =
+        'INSERT INTO '                                               +
+        'PARALELOC.ASIFILEN_HIS_TABLE '                              +
+        '(CAPUNT, CCTAMA, CCTAFI, CCTAAU, CCODIG, CPROGR, CFECON, '  +
+        'CDEHA, CREFOP, CFEVTO, CCONCE, CIMPOR, CMONED, CPROVI, '    +
+        'CTIPOP, CTIPRO, CCTANA, CCODMA, CREFDE, CDDEPT, CDANLT, '   +
+        'CDEBAN, CDPERS, CDGFIN, CDIM06, CDIM07, CDIM08, '           +
+        'Origen_Data, CDNAMEENV, CDEFEC_CREA, CDEUSR_CREA ) '        +
+
+        'SELECT '                                                    +
+        'CAPUNT, CCTAMA, CCTAFI, CCTAAU, CCODIG, CPROGR, CFECON, '   +
+        'CDEHA, CREFOP, CFEVTO, CCONCE, CIMPOR, CMONED, CPROVI, '    +
+        'CTIPOP, ' + WCamBlan + ',' + WCamBlan + ','                 +
+        WCamBlan + ',' + WCamBlan + ',' + WCamBlan + ','             +
+        WCamBlan + ',' + WCamBlan + ',' + WCamBlan + ','             +
+        WCamBlan + ',' + WCamBlan + ',' + WCamBlan + ','             +
+        WCamBlan + ','                                               +
+        WComi + %Trim(P_Origen_data) + WCOMI + ', '                  +
+        WComi + %Trim(P_NomEnv) + WComi + ', current Timestamp, '    +
+        WComi + %trim(WUser) + WComi                                 +
+        ' From ' + %Trim(WLibOrigen) + '.' + %Trim(P_NomAsiPar);
+    EndIf;
       exec sql prepare SX1 from :SqlStr;
 
       Monitor;
         exec sql execute SX1;
-      
+
         If sqlStt <> '00000';
-          observacionSql = 'Error en el COPY del Parcial ' + 
+          observacionSql = 'Error en el COPY del Parcial ' +
             %Trim(P_NomAsiPar);
           Clear Nivel_Alerta;
           Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
@@ -134,7 +170,7 @@
         EndIf;
 
       On-Error;
-        observacionSql = 'Error en el COPY del Parcial ' + 
+        observacionSql = 'Error en el COPY del Parcial ' +
           %Trim(P_NomAsiPar);
           Clear Nivel_Alerta;
           Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
@@ -148,25 +184,26 @@
 
     // ******************************************************
     // ** Copia al CABEVI_HIS_TABLE del parcial generado **
-    SqlStr = 
+    SqlStr =
       'INSERT INTO '                                               +
-      'FICHEROS.CABEVI_HIS_TABLE '                                 +
+      'PARALELOC.CABEVI_HIS_TABLE '                                +
       '(CDESCR, CNUAPU, CFEALT, CFEBAJ, CNUEVI, CIDMOD, '          +
-      'CNAMEENV, FEC_CREA, USR_CREA) '                             +
+      'Origen_Data, CNAMEENV, FEC_CREA, USR_CREA) '                +
 
       'SELECT '                                                    +
       'CDESCR, CNUAPU, CFEALT, CFEBAJ, CNUEVI, CIDMOD, '           +
-      %Trim(P_NomEnv) + ', current Timestamp, '                    +
-      %trim(WUser) +
-      ' From ' + %Trim(P_NomEnv) + '.' + %Trim(P_NomCabpar);    
+      WComi + %Trim(P_Origen_data) + WCOMI + ', '                  +
+      WComi + %Trim(P_NomEnv) + WComi + ', current Timestamp, '    +
+      WComi + %trim(WUser) + WComi                                 +
+      ' From ' + %Trim(WLibOrigen) + '.' + %Trim(P_NomCabpar);
 
       exec sql prepare SX2 from :SqlStr;
 
       Monitor;
         exec sql execute SX2;
-      
+
         If sqlStt <> '00000';
-          observacionSql = 'Error en el COPY del Parcial ' + 
+          observacionSql = 'Error en el COPY del Parcial ' +
             %Trim(P_NomCabpar);
           Clear Nivel_Alerta;
           Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
@@ -174,7 +211,7 @@
         EndIf;
 
       On-Error;
-        observacionSql = 'Error en el COPY del Parcial ' + 
+        observacionSql = 'Error en el COPY del Parcial ' +
           %Trim(P_NomCabpar);
           Clear Nivel_Alerta;
           Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
@@ -189,25 +226,26 @@
 
     // ******************************************************
     // ** Copia al DETEVI_HIS_TABLE del parcial generado **
-    SqlStr = 
+    SqlStr =
       'INSERT INTO '                                               +
-      'FICHEROS.DETEVI_HIS_TABLE '                                 +
-      '(ELINEA, ENULIN, ENUAPU, EFEALT, ENUEVI, ENAMEENV, '        + 
-      'EFEC_CREA, EUSR_CREA) '                                     +
+      'PARALELOC.DETEVI_HIS_TABLE '                                +
+      '(ELINEA, ENULIN, ENUAPU, EFEALT, ENUEVI, Origen_Data, '     +
+      'ENAMEENV, EFEC_CREA, EUSR_CREA) '                           +
 
       'SELECT '                                                    +
       'ELINEA, ENULIN, ENUAPU, EFEALT, ENUEVI, '                   +
-      %Trim(P_NomEnv) + ', current Timestamp, '                    +
-      %trim(WUser) +
-      ' From ' + %Trim(P_NomEnv) + '.' + %Trim(P_NomDetPar);    
+      WComi + %Trim(P_Origen_data) + WCOMI + ', '                  +
+      WComi + %Trim(P_NomEnv) + WComi + ', current Timestamp, '    +
+      WComi + %trim(WUser) + WComi                                 +
+      ' From ' + %Trim(WLibOrigen) + '.' + %Trim(P_NomDetPar);
 
       exec sql prepare SX3 from :SqlStr;
 
       Monitor;
         exec sql execute SX3;
-      
+
         If sqlStt <> '00000';
-          observacionSql = 'Error en el COPY del Parcial ' + 
+          observacionSql = 'Error en el COPY del Parcial ' +
             %Trim(P_NomDetPar);
           Clear Nivel_Alerta;
           Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
@@ -215,7 +253,7 @@
         EndIf;
 
       On-Error;
-        observacionSql = 'Error en el COPY del Parcial ' + 
+        observacionSql = 'Error en el COPY del Parcial ' +
           %Trim(P_NomDetPar);
           Clear Nivel_Alerta;
           Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);

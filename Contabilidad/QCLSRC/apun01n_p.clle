@@ -1,39 +1,40 @@
-PGM (&NomProc &NOMENV)
+  PGM (&NomProc &NOMENV)
     dcl  &NomProc  *char  10
     dcl  &NOMENV   *char  10
     dcl  &NUMAPU   *char   6
 
     /*------------------------------------------------------*/
-    /* Asiento traspaso pa a fa Diners/MC                   */
+    /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */
     /*------------------------------------------------------*/
-    CALL       PGM(PARALELOC/ANX0100) +
-               PARM('ASIANEXOS'       +
-                    'CABEANX'         +
-                    'DETEANX'         +
+    CALL       PGM(PARALELOC/APUN01N) +
+               PARM('APUNTE01'      +
+                    'CABEAPUN'        +
+                    'DETEAPUN'        +
                     &NUMAPU)
 
     /*------------------------------------------------------*/
     /* Copia de Registros a Historicos                      */
     /*------------------------------------------------------*/
-    CALL       PGM(CONTAB102)        +
-               PARM('ASIANEXOS'      +
-                    'CABEANX'        +
-                    'DETEANX'        +
+    CALL       PGM(CONTAB102) +
+               PARM('APUNTE01'      +
+                    'CABEAPUN'        +
+                    'DETEAPUN'        +
                     &NOMENV           +
-                    'N')
+                    'N'               +
+                    'T')
 
     /*-------------------------------------------------------*/
     /* Actualiza Auditoria Paralelo                          */
     /*-------------------------------------------------------*/
     Call CONTAB101 Parm(&NomProc      +
-                    'ANX0100'         +
-                    'ASIANEXOS'      +
-                    'CABEANX'        +
-                    'DETEANX'        +
+                    'APUN01N'         +
+                    'APUNTE01'      +
+                    'CABEAPUN'        +
+                    'DETEAPUN'        +
                     &NUMAPU           +
                     &NOMENV)
     /*--------------------------------*/
-    /* Fin del CEREFSN New            */
+    /* Fin del APUN01N New            */
     /*--------------------------------*/
-    DSPJOBLOG  OUTPUT(*OUTFILE) OUTFILE(LJMONTERO/ANX0100JOB)
-endpgm
+    DSPJOBLOG  OUTPUT(*OUTFILE) OUTFILE(LJMONTERO/APUN01JOB)
+  endpgm

@@ -11,7 +11,7 @@
   //
   // ------------------------------------------------------------------------
   // Notas:
-  //  * 
+  //  *
   //
   // ------------------------------------------------------------------------
   ctl-opt option(*srcstmt : *nodebugio : *noexpdds)
@@ -78,7 +78,7 @@
     //-----------------------------------------------------------------
     If Not CONTABSRV_Copy_Ficheros_Paralelo(ProcContab:WNameLIB);
       *inlr = *on;
-      Return;      
+      Return;
     EndIf;
 
     //-----------------------------------------------------------------
@@ -86,7 +86,7 @@
     //-----------------------------------------------------------------
     If Not Ejecucion_Proceso_Paralelo();
       *inlr = *on;
-      Return;      
+      Return;
     EndIf;
 
     P_NomEnv = WNameLIB;
@@ -95,7 +95,7 @@
   end-proc;
 
   //-----------------------------------------------------------------
-  // Crea Libreria PARALXXXXX correspondiente para el proceso  
+  // Crea Libreria PARALXXXXX correspondiente para el proceso
   //-----------------------------------------------------------------
   dcl-proc CRT_LIB_ENV;
     dcl-pi *n Ind;
@@ -108,21 +108,21 @@
     Dcl-s WUser      Char(10)  Inz(*user);
 
     Exec SQL
-      Select IFNULL(Max(ID_ENVIROMENT), 0) 
+      Select IFNULL(Max(ID_ENVIROMENT), 0)
       Into :WLastID
       From Paralelo_Ctl_Env;
 
-    WNameLIB = 'PARAL' + %Editc(WLastID + 1: 'X');
+    WLastID += 1;
+    WNameLIB = 'PARAL' + %Editc(WLastID: 'X');
 
-    WTXT = 'Paralelo Contable ' + %trim(ProcOrig) + '-' + %trim(ProcContab);
+    WTXT = 'Paralelo Contab.' + %trim(ProcOrig) + '-' + %trim(ProcContab);
     WSQL = 'CRTLIB LIB('               +
            WNameLIB                    +
            ') TEXT(' + WComi           +
-           %Trim(WTXT)                 + 
-           %trim(ProcOrig) +  '-'      +
-           %trim(ProcContab) +  ')';
+           %Trim(WTXT)                 +
+           WComi + ')';
 
-    exec sql 
+    exec sql
       CALL QSYS2.QCMDEXC(:WSQL) ;
 
     If Sqlcode < 0;
@@ -142,10 +142,10 @@
         (ID_ENVIROMENT, NAME_PROCESS, DESCR_PROCESS, Date_Create,
         User)
       VALUES (
-        Defult, 
-        :ProcContab, 
-        :WTXT, 
-        Current TimeStamp, 
+        default,
+        :ProcContab,
+        :WTXT,
+        Current TimeStamp,
         :WUSER);
 
     If Sqlcode < 0;
@@ -164,7 +164,7 @@
 
   end-proc;
   //-----------------------------------------------------------------
-  // Crea Libreria PARALXXXXX correspondiente para el proceso  
+  // Crea Libreria PARALXXXXX correspondiente para el proceso
   //-----------------------------------------------------------------
   dcl-proc Ejecucion_Proceso_Paralelo;
     dcl-pi *n Ind;
@@ -177,20 +177,23 @@
     Dcl-s WUser      Char(10)  Inz(*user);
 
 
-// SBMJOB     CMD(CALL PGM(PARALELOC/CEREFSN_P) PARM(('FS01COM'))) +
-//                         JOB(CEREFSN_P) INLLIBL(PARALELOC EXPLOTA)
+// SBMJOB CMD(
+//        CALL PGM(PARALELOC/FSPAFAN_P)
+//        PARM((FS01COM) (PARAL00003))
+//        ) JOB(FSPAFAN_P)
+//          INLLIBL(PARAL00003 PARALELOC EXPLOTA)
 
-    WCMD = 
+    WCMD =
       'SBMJOB     CMD(CALL PGM(PARALELOC/'       +
-      %Trim(ProcContab)                          +
-      'PARM(('                                   + 
-      WComi + %Trim(ProcOrig) + WComi + ' '      + 
-      WComi + %Trim(WNameLIB) + WComi            +
+      %Trim(ProcContab) + ')'                    +
+      ' PARM(('                                  +
+      %Trim(ProcOrig) + ') ('                    +
+      %Trim(WNameLIB)                            +
       '))) JOB(' + %Trim(ProcContab) + ') '      +
       'INLLIBL(' + %trim(WNameLIB)               +
       ' PARALELOC EXPLOTA)';
 
-    exec sql 
+    exec sql
       CALL QSYS2.QCMDEXC(:WCMD) ;
 
     If Sqlcode < 0;
@@ -205,5 +208,5 @@
       Return *Off;
     EndIf;
 
-    Return *On;    
+    Return *On;
   end-proc;
