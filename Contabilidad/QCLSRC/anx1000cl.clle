@@ -16,6 +16,7 @@
              DCL        VAR(&NUMREG)  TYPE(*DEC)  LEN(10 0)
              DCL        VAR(&NUMAPU)  TYPE(*CHAR) LEN(6)
              DCL        VAR(&MSG) TYPE(*CHAR) LEN(300)
+             DCL        VAR(&NOMPARA) TYPE(*CHAR) LEN(10)  
 /*----------------------------------------------------------------------*/
              RTVSYSVAL  SYSVAL(QDATE) RTNVAR(&FECHA)
 

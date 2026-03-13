@@ -40,21 +40,23 @@
   dcl-ds Acumulador likeds(AcumuladorTpl) Dim(100) Inz;
 
   dcl-ds DS_IMOV_TARJ Qualified;
-    PAIS       Zoned(3);
-    RECAP      Zoned(4);
-    TARJETA    Char(16);
-    NOMEMPRESA Char(30);
-    NOMSOCIO   Char(35);
-    IMPCONS    Zoned(11:2);
+    PAIS            Zoned(3);
+    RECAP           Zoned(4);
+    TARJETA         VarChar(32);
+    NOMEMPRESA      Char(30);
+    NOMSOCIO        Char(35);
+    IMP_CONS_EUROS  Zoned(11:2);
+    IMP_BRUTO_EUROS Zoned(11:2);
     CODPROD    Zoned(3);
   end-ds;
 
   dcl-ds DS_RECAP Qualified;
-    PAIS       Zoned(3);
-    RECAP      Zoned(4);
-    IMP_NETO   Zoned(11:2);
-    IMP_COMIS  Zoned(11:2);
-    IMP_Mon_Orig  Zoned(11:2);
+    PAIS            Zoned(3);
+    RECAP           Zoned(4);
+    IMP_ORIG_NETO   Zoned(11:2);
+    IMP_COMIS_NETO  Zoned(11:2);
+    IMP_EUROS_NETO  Zoned(11:2);
+    IMP_COMIS_EUROS Zoned(11:2);
     Fecha_Recap Char(10);
   end-ds;
 
@@ -69,9 +71,11 @@
   // --------------------------
   Dcl-S fechaSistema Timestamp;
 
-  Dcl-S TOT_COSUMO   Zoned(11:2);
-  Dcl-S TOT_RECAP    Zoned(11:2);
-  Dcl-S TOT_COMIS    packed(14:3);
+  Dcl-S TOT_COSUMO   Zoned(11:2)  Inz;
+  Dcl-S TOT_RECAP    Zoned(11:2)  Inz;
+  Dcl-S TOT_COMIS    packed(14:3) Inz;
+  Dcl-S TOT_DEBE     Zoned(12:2)  Inz;
+  Dcl-S TOT_HABER    Zoned(12:2)  Inz;
   Dcl-s WInd         Zoned(3);
   Dcl-s WInd_PR      Zoned(3);
   Dcl-s fecproces    Zoned(8);
@@ -91,52 +95,56 @@
 
   // Consumos por tarjeta
   Exec Sql declare  C_Consumos Cursor For
-    Select
-      WPAIS,
-      WRECAP,
-      SubString(WCPO37, 1, 14) Tarjeta,
+    Select 
+      r.WPais, 
+      r.WRecap,
+      r.Tarjeta,
+      r.NomEmpresa,
+      r.NomSocio,
+      Dec(Round(r.Imp_Bruto_Euros*rate_Comis, 2), 11, 2) Imp_Comis_Euros,
+      Dec(Round(r.Imp_Bruto_Euros, 2), 11, 2) Imp_Bruto_Euros,
+      r.Producto
+  from (
+    SELECT 
+      WPais, 
+      WRecap, 
+      SUBSTRING(a.WCPO37, 1, 14) Tarjeta,
       SNOMEM NomEmpresa,
       SNOMBR NomSocio,
-      Dec(DECIMAL(
-       (
-       CASE
-        WHEN SUBSTR(SUBSTRING(WCPO37, 17, 8), 8, 1)
-          IN ('}', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R')
-          THEN -1 ELSE 1 END) *
-      DECIMAL(SUBSTR(SUBSTRING(WCPO37, 17, 8), 1, 7) CONCAT
-      TRANSLATE(SUBSTR(SUBSTRING(WCPO37, 17, 8), 8, 1),
-      '01234567890123456789', '}JKLMNOPQR{ABCDEFGHI'),
-      15, 3), 15, 2) / 100, 11, 2) AS Consumo,
-      SCODPR
-    From IMOVAPUN01 a
-      inner Join Ficheros.T_MSOCIO b
-      On (Dec(SubString(WCPO37, 3, 8), 8, 0) = b.NUREAL)
-    Where
-      WTIPRE = '7'
-    Order by WPAIS, WRECAP;
-
+      WIMPMO Imp_original, 
+      Dec(dec( WCAMBI , 6, 0)/1000, 6, 3) Rate_Conv,  
+      WIMPMO * (Dec(dec( WCAMBI , 6, 0)/1000, 6, 3)) as Imp_Bruto_Euros, 
+      Dec(WRATE/100, 11, 6)  rate_Comis,
+      SCODPR Producto
+    FROM IMOVAPUN01 a 
+       LEFT JOIN T_MSOCIO b
+        ON (Dec(SUBSTRING(WCPO37, 3, 8), 8, 0) = b.NUREAL)
+    WHERE WTIPRE = '7' ) r 
+    Order by r.Producto
+  ;
 
   // Registros de Recap por Pais
   Exec Sql declare  C_Recap Cursor For
-    Select
-      WPAIS, WRECAP,
-      Dec(Round((WIMPMO - (WIMPMO * WRATE/100)) * b.BULTCB, 2), 11, 2)
-        Imp_Neto_Recap_IMOV,
-      Dec(Round((WIMPMO * WRATE/100) * b.BULTCB, 2), 11, 2) Imp_Comision_Conv,
-      BNETRE Imp_Mon_orig,
-      (SubString(Digits(WFEREC), 1, 2) || '-' ||
-       SubString(Digits(WFEREC), 3, 2) || '-' ||
-       SubString(Digits(WFEREC), 5, 4)) as Fecha_Recap
-    From IMOV a
-      Inner join BOLRECAP b
-        On (WPAIS = BPAIS
-            and WRECAP = BRECAP
-            and SubString(WCPO25, 19, 3) = BMONEP
-            and dec(SubString(WCPO37, 25, 4) || '20' || SubString(WCPO37, 29, 2), 8, 0) = BFEREC)
-    Where
-      WTIPRE = 'R'
-    Order by WPAIS, WRECAP;
-
+    Select 
+      r.WPais, 
+      r.WRecap,
+      Dec(Round(r.Imp_original - (r.Imp_original*rate_Comis), 2), 11, 2) Imp_Orignal_Neto,
+      Dec(Round(r.Imp_original*rate_Comis, 2), 11, 2) Imp_Comis_Orignal,
+      Dec(Round(r.Imp_Bruto_Euros - (r.Imp_Bruto_Euros*rate_Comis), 2), 11, 2) Imp_Euros_Neto,
+      Dec(Round(r.Imp_Bruto_Euros*rate_Comis, 2), 11, 2) Imp_Comis_Euros,
+      r.Fecha_Recap
+    from (
+        SELECT 
+          WPais, 
+          Wrecap, WIMPMO Imp_original, 
+          Dec(dec( WCAMBI , 6, 0)/1000, 6, 3) Rate_Conv,  
+          WIMPMO * (Dec(dec( WCAMBI , 6, 0)/1000, 6, 3)) as Imp_Bruto_Euros, 
+          Dec(WRATE/100, 11, 6)  rate_Comis,
+          (SubString(Digits(WFEREC), 1, 2) || '-' ||
+           SubString(Digits(WFEREC), 3, 2) || '-' ||
+           SubString(Digits(WFEREC), 5, 4)) as Fecha_Recap
+        FROM IMOVAPUN01 a WHERE WTIPRE = 'R' ) r 
+    ;
   // ****************************************************************************
   // PROCESO PRINCIPAL
   // ****************************************************************************
@@ -204,9 +212,9 @@
     EndIf;
     dow sqlStt = '00000';
 
-      TOT_COSUMO += DS_IMOV_TARJ.IMPCONS;
+      TOT_COSUMO += %ABS(DS_IMOV_TARJ.IMP_BRUTO_EUROS);
       // Acumula importe por producto
-      Acumula_importe(DS_IMOV_TARJ.IMPCONS:DS_IMOV_TARJ.CODPROD);
+      Acumula_importe(DS_IMOV_TARJ.IMP_BRUTO_EUROS:DS_IMOV_TARJ.CODPROD);
 
       Inserta_Detalle_Evi_Consumos();
 
@@ -248,8 +256,8 @@
         IndCab = *On;
       EndIf;
 
-      TOT_RECAP += DS_RECAP.IMP_NETO;
-      TOT_COMIS += DS_RECAP.IMP_COMIS;
+      TOT_RECAP += %ABS(DS_RECAP.IMP_EUROS_NETO);
+      TOT_COMIS += DS_RECAP.IMP_COMIS_EUROS;
 
       If Not Genera_Contabilidad_Haber_Pais_Recap();
 
@@ -291,44 +299,6 @@
       Return *On;
 
   end-proc;
-  //-----------------------------------------------------------------
-  // Acumula Importes por Pais y Recap
-  //-----------------------------------------------------------------
-  // dcl-proc Acumula_Imp_Pais_Recap;
-
-  //   dcl-pi *n;
-  //     pCod_Pais  zoned(3:0);
-  //     pCod_Recad zoned(4:0);
-  //     pImporte   zoned(11:2);
-  //   end-pi;
-
-  //   dcl-s WIndx  int(10) inz(0);
-  //   dcl-s Key    char(7);
-
-  //   // Construye clave en el mismo orden del fichero (Pais+Recad) con ceros a la izquierda
-  //   Key = %editc(pCod_Pais:'X') + %editc(pCod_Recad:'X');
-
-  //   // Buscar desde 1 (array ya ordenado porque la lectura viene ordenada)
-  //   WIndx = %lookup(Key : Acumulador_Pais_Recap(*).Key : 1);
-
-  //   if WIndx > 0;
-  //     Acumulador_Pais_Recap(WIndx).Total += pImporte;
-  //   else;
-  //     WInd_PR += 1;
-
-  //     // (opcional) control de overflow
-  //     if WIndx > %elem(Acumulador_Pais_Recap);
-  //       dsply 'Acumulador lleno';
-  //       return;
-  //     endif;
-
-  //     Acumulador_Pais_Recap(WInd_PR).Key       = Key;
-  //     Acumulador_Pais_Recap(WInd_PR).Cod_Pais  = pCod_Pais;
-  //     Acumulador_Pais_Recap(WInd_PR).Cod_Recad = pCod_Recad;
-  //     Acumulador_Pais_Recap(WInd_PR).Total     = pImporte;
-  //   endif;
-
-  // end-proc;
   //-----------------------------------------------------------------------------
   // Inicializamos datos
   //-----------------------------------------------------------------------------
@@ -412,7 +382,7 @@
     dsDetalleEvi.Tarjeta    = %Trim(DS_IMOV_TARJ.TARJETA);
     dsDetalleEvi.NomEmpresa = %Trim(DS_IMOV_TARJ.NOMEMPRESA);
     dsDetalleEvi.NomSocio   = %Trim(DS_IMOV_TARJ.NOMSOCIO);
-    dsDetalleEvi.Consumo   = %Editc(DS_IMOV_TARJ.IMPCONS:'J');
+    dsDetalleEvi.Consumo   = %Editc(DS_IMOV_TARJ.IMP_BRUTO_EUROS:'J');
     dsDetalleEvi.Producto = DS_IMOV_TARJ.CODPROD;
 
     dsDetevi.lineaTexto = dsDetalleEvi;
@@ -529,9 +499,9 @@
 
     dsDetalleEviRec.PAIS = DS_RECAP.PAIS;
     dsDetalleEviRec.RECAP = DS_RECAP.RECAP;
-    dsDetalleEviRec.Imp_Neto_Recap = %Editc(DS_RECAP.IMP_NETO:'J');
-    dsDetalleEviRec.Imp_Comision = %Editc(DS_RECAP.IMP_COMIS:'J');
-    dsDetalleEviRec.Imp_Mon_Orig = %Editc(DS_RECAP.IMP_COMIS:'J');
+    dsDetalleEviRec.Imp_Neto_Recap = %Editc(DS_RECAP.IMP_EUROS_NETO:'J');
+    dsDetalleEviRec.Imp_Comision = %Editc(DS_RECAP.IMP_COMIS_EUROS:'J');
+    dsDetalleEviRec.Imp_Mon_Orig = %Editc(DS_RECAP.IMP_ORIG_NETO:'J');
     dsDetalleEviRec.Fecha_recap = DS_RECAP.Fecha_Recap;
 
     dsDetevi.lineaTexto = dsDetalleEviRec;
@@ -583,7 +553,7 @@
     dsDetevi.lineaTexto =
       'PAIS RECAP  TARJETA           NOMBRE EMPRESA' +
       '                  NOMBRE SOCIO'             +
-      '                             CONSUMO      PROD';
+      '                                CONSUMO     PROD';
 
     numeroLinea += 1;
     dsDetevi.numeroLinea = numeroLinea;
@@ -797,8 +767,11 @@
       dsDatosAsientoNoParametrizables.tipoOperacion = 0;
 
       dsDatosAsientoNoParametrizables.debeHaber = 'D';
+      TOT_DEBE += %abs(Acumulador(I).Total);
       if Acumulador(I).Total < 0;
         dsDatosAsientoNoParametrizables.debeHaber = 'H';
+        TOT_DEBE -= %abs(Acumulador(I).Total);
+        TOT_HABER += %abs(Acumulador(I).Total);
       endif;
 
       dsDatosAsientoNoParametrizables.importe =
@@ -863,11 +836,14 @@
     dsKeyAsiento.codProducto = 0; // Para Recap por Pais
 
     dsDatosAsientoNoParametrizables.debeHaber = 'H';
-    if DS_RECAP.IMP_NETO < 0;
+    TOT_HABER += %abs(DS_RECAP.IMP_EUROS_NETO);
+    if DS_RECAP.IMP_EUROS_NETO < 0;
       dsDatosAsientoNoParametrizables.debeHaber = 'D';
+      TOT_HABER -= %abs(DS_RECAP.IMP_EUROS_NETO);
+      TOT_DEBE  += %abs(DS_RECAP.IMP_EUROS_NETO);
     endif;
     dsDatosAsientoNoParametrizables.importe =
-          %abs(DS_RECAP.IMP_NETO);
+          %abs(DS_RECAP.IMP_EUROS_NETO);
 
     if not CONTABSRV_Obtener_Datos_Asiento(
             dsKeyAsiento
@@ -881,7 +857,7 @@
     dsAsifilen.cconce =
       'RECAP ' +
       DS_RECAP.Fecha_Recap + ' ' +
-      %Editc(DS_RECAP.IMP_Mon_Orig:'J');
+      %trim(%Editc(%ABS(DS_RECAP.IMP_ORIG_NETO):'J'));
     dsAsifilen.cctana = %editc(DS_RECAP.PAIS:'X');
     dsAsifilen.crefde = %editc(DS_RECAP.RECAP:'X');
 
@@ -908,6 +884,18 @@
     Dcl-s WCodProd Zoned(3);
     Dcl-s WCodDiv  Char(3);
     Dcl-s WNumOrden Zoned(2);
+    Dcl-s WDif     Zoned(11:2);
+
+    TOT_HABER += TOT_COMIS;
+    If TOT_DEBE <> TOT_HABER;
+      WDif = TOT_DEBE - TOT_HABER;  
+          
+      If WDif > 0;
+        TOT_COMIS += WDif;
+      Else;
+        TOT_COMIS -= %ABS(WDif);
+      EndIf;
+    EndIf;
 
     WNumOrden = 3; // Orden para Haber - Comisiones
     WCodProd  = 0; // Codigo Producto para Comisiones

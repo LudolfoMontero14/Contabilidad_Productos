@@ -18,7 +18,6 @@
   ctl-opt option(*srcstmt : *nodebugio : *noexpdds)
     decedit('0,') datedit(*DMY/)
     bnddir('UTILITIES/UTILITIES':'CONTBNDDIR')
-    //:'EXPLOTA/CALDIG')
     dftactgrp(*no) actgrp(*caller) main(main);
 
   // --------------------------
@@ -59,7 +58,6 @@
   // Array / Matriz que totaliza importes por productos
   dcl-ds Acumulador likeds(AcumuladorTpl) Dim(100) Inz;
 
-  //dcl-ds dsSocio     likeDs(dsT_MSOCIOTpl) inz;
   // --------------------------
   // Declaracion de Variables
   // --------------------------
@@ -95,7 +93,7 @@
   // Declaracion de Cursores
   // --------------------------
   Exec Sql
-    SET OPTION Commit = *none,      // EN PRUEBA ES *NONE
+    SET OPTION Commit = *chg,     
             CloSqlCsr = *endmod,
             AlwCpyDta = *yes;
 
@@ -111,7 +109,7 @@
       NUM_OPERACION, ESTATUS,
       COD_ERROR, FEC_CREACION, USER_CREACION, FEC_MODIF,
       USER_MODIF
-    FROM FICHEROS.ANX_SOLICITUD_ANEXOS
+    FROM ANX_SOLICITUD_ANEXOS
     WHERE ESTATUS = 'P'
     ORDER BY ID_ANEXO, NUREAL;
 
@@ -220,43 +218,16 @@
         dsANXSOLANX.Estatus   = 'E';
         dsANXSOLANX.Cod_Error = 'ANXERR000';  // Error en Codigo producto
         dsANXSOLANX.FECHA_CONTAB = %Date('0001-01-01');
-        Actualiza_Solicitud(dsANXSOLANX);
-        Iter;
+        If Not Actualiza_Solicitud(dsANXSOLANX);
+          sqlStt = '00000';
+          Iter;
+        EndIf;
       Endif;
 
       WTot_IdAnexo += dsANXSOLANX.Importe;
 
-      // Reset dsSocio;
-      // Exec SQL
-      //   Select
-      //     SNUSO1, NUREAL, SNUSO2, SCUOTE, SNOMBR, SDOMIC, CODPOS, PROTG1,
-      //     SLOCAL, SAPEPM, PROTG2, ZONA, SCARNE, SEXTTE, SLIBR0, SEXENT,
-      //     SLIBR1, SFSTAT, SNOMEM, SNOMBA, SDOMBA, SLOCBA, SZOBAN,SNCTAC,
-      //     SMCTAC, SFPAGO, SCONSO, SCONPM, SNOMPM, SDUPEX, SOFESE, SMESCU,
-      //     SCOBHA, SCLTLF, STELEF, STVPER, SMYGAS, SFMGAS, SCLDNI, SCONBA,
-      //     SNIDEM, SPLAST, SCODPO, SCODVI, SMOTBA, NBANCO, SNOREN, SOPCAM,
-      //     SGTEXT, SLIBR2, SNOATM, SSEXO, SOFEPM, SACREC, SMOCTA, SEXNIF,
-      //     SF1STA, SCLPRO,SCONCU,SDIAPA,SSUBHA,SLIBR3,SFREC1,SIMPR1,SLIBR4,
-      //     SFREC2,SIMPR2,SLIBR5,SFREC3,SIMPR3,SLIBR6,SFREC4,SIMPR4,
-      //     SCODEV,SFDEVO,SNOGTS,SLICRE,SACREB,SLIBR7,SCORDV,SREANT,
-      //     SACDNI,SMESRE,SDIAPR,SCLIEX,SNUIDE,SVARTR,SCODNT,STATUS,
-      //     SNNIF,SCATEM,SSALAN,SRECAU,SHNORE,SDEVIM,SDNODI,SOPSER,
-      //     SIMNSE,SOPINT,SIMINT,SDIFAL,SDIRES,SOPRPM,SIMPPM,SIMPAP,
-      //     SOPNCO,SIMNCO,SANACI,SPREFI,SCOPER,SAÑVPM,SVIGPM,SVIPMÑ,
-      //     SPODER,S@,SAUSEO,SAUSER,SAUCAO,SAUCAL,SINFLE,SIN10C,
-      //     SINFFA,SIMPPA,SACC3,SREGEM,SSEGTA,SLIBR8,SAPECA,SAUTIN,
-      //     SAUTOT,SAUINO,SAUOTO,SPORCE,SMOFAC,STIPRE,SPORAN,SPENOF,
-      //     SPIN, SMUSCA,SLIBR9,SFNCAJ,SBCHRE,SINGRE,SALTPM,SVIGTR,
-      //     SFACRB,SCODPR,SOFFSET
-      //   Into :dsSocio
-      //   From T_MSOCIO
-      //   Where
-      //     NUREAL = :dsANXSOLANX.NUREAL
-      // ;
-
       If dsANXCATALG.Destino = 'F';
         Inserta_Detalle_Evi(dsANXCATALG:dsANXSOLANX);
-        //Genera_Reg_Descripcion(dsANXCATALG:dsANXSOLANX:dsSocio);
 
         Exec SQL
           Select Operacion
@@ -278,17 +249,19 @@
       dsANXSOLANX.FECHA_CONTAB = %Date();
       dsANXSOLANX.Estatus   = 'C';
       dsANXSOLANX.Cod_Error = '';
-      dsANXSOLANX.Numero_Apunte    = NumApun;
-      dsANXSOLANX.Numero_Evidencia = APROVI;
-      Actualiza_Solicitud(dsANXSOLANX);
+      dsANXSOLANX.Numero_Apunte    = WApunte;
+      dsANXSOLANX.Numero_Evidencia = dsDetevi.numeroEvidencia;
+      If Not Actualiza_Solicitud(dsANXSOLANX);
+        sqlStt = '00000';
+        Iter;
+      EndIf;
     enddo;
 
     Exec Sql Close  C_SolPend;
 
     If WTot_IdAnexo<>0;
       // Genera Asiento Contable
-      //Genera_Contabilidad(WID_Anexo);
-      WIDCONTAB = WID_Anexo;
+      WIDCONTAB = dsANXCATALG.Id_Contab;
       CONTABSRV_Genera_Contabilidad_Totales_Producto(
                 Acumulador      // Arreglo de Totales por Producto
                 :WInd           // Indice de registros Grabados en el Arreglo
@@ -337,7 +310,7 @@
   //-----------------------------------------------------------------------------
   dcl-proc Actualiza_Solicitud;
 
-    dcl-pi *n;
+    dcl-pi *n Ind;
       dsANXSOLANX likeDs(dsANXSOLANXTpl);
     end-pi;
 
@@ -358,13 +331,15 @@
       observacionSql = 'ANEXOS: Error al Actualizar Solicitud';
       Clear Nivel_Alerta;
       Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
+
+      If Nivel_Alerta = 'HI';
+        *InH1 = *On;
+        *InLR = *On;
+      EndIf;
+      Return *Off;
     EndIf;
 
-    If Nivel_Alerta = 'HI';
-      *InH1 = *On;
-      *InLR = *On;
-    EndIf;
-
+    Return *On;
   end-proc;
 
   //-----------------------------------------------------------------
@@ -460,12 +435,12 @@
     dcl-pi *n;
       dsANXCATALG likeDS(dsANXCATALGTpl);
       dsANXSOLANX likeDs(dsANXSOLANXTpl);
-      //dsSocio      likeDs(dsT_MSOCIOTpl);
     end-pi;
 
     Dcl-s WReg     Char(132);
     Dcl-s WImpCuo  Zoned(6:2);
     Dcl-s WNomProd Char(30);
+    dcl-s marca char(1);
 
     dcl-ds dsDetalEvi Qualified;
         Esp01     Char(1);
@@ -477,6 +452,8 @@
         Esp04     Zoned(3);
         DesAnx    Char(60);
     End-ds;
+
+    marca = GRABAR_TEMPORAL;
 
     Exec SQL
       Select NOMBRE_PRODUCTO

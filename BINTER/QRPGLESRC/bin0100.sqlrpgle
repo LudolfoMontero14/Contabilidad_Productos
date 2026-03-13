@@ -15,7 +15,9 @@
   // ------------------------------------------------------------------------
   ctl-opt option(*srcstmt : *nodebugio : *noexpdds)
     decedit('0,') datedit(*DMY/)
-    bnddir('UTILITIES/UTILITIES':'NOXDB':'HTTPAPI':'EXPLOTA/CALDIG':'CRYPT')
+    bnddir('UTILITIES/UTILITIES'
+        :'NOXDB':'HTTPAPI':'EXPLOTA/CALDIG'
+        :'CRYPT')
     dftactgrp(*no) actgrp(*new) main(main);
 
   // --------------------------
@@ -30,15 +32,20 @@
   // --------------------------
   // Cpys y Include
   // --------------------------
-  /copy EXPLOTA/QRPGLESRC,BINCPY_H      // Estructuras BINTER
   /copy UTILITIES/QRPGLESRC,PSDSCP      // psds
   /copy UTILITIES/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
+  ///COPY EXPLOTA/qrpglesrc,CARDVAU_CP
   /COPY EXPLOTA/QRPGLESRC,UTILITIESH
   /include QRPGLESRC,XXXCRYGE_H         // Crypto API
 
-  /copy UTILITIES/QRPGLESRC,PCISRV_CP // Fuicion de Enmascaramiento
+  /copy UTILITIES/QRPGLESRC,PCISRV_CP // Funcion de Enmascaramiento
   /copy EXPLOTA/QRPGLESRC,OPECRTSRVH  // Procedimientos de Operaciones
   /copy EXPLOTA/QRPGLESRC,OPE_DS_COP  // DS Tablas de Operaciones
+
+  /Define BIN_Process
+  /Define BIN_Templates
+  /Define BIN_COMMON_Variables
+  /Include EXPLOTA/QRPGLESRC,BINCPY_H
 
   // Define para el NOXDB
   /Define UTWSSRV_WEB
@@ -53,10 +60,11 @@
   dcl-ds dsFiles_Proc Qualified dim(50) Inz;
     Cod_File    Zoned(10);
     Dsc_File    VarChar(300);
-    Tot_Reg_Rec Zoned(5);
-    Tot_Proc    Zoned(13:2);
-    Tot_Rec     Zoned(13:2);
-    Can_Rec     Zoned(5);
+    Tot_Reg_Procesados Zoned(5);
+    Can_Reg_Aceptado Zoned(5);
+    Tot_Imp_Aceptado Zoned(13:2);
+    Tot_Imp_Rechazado Zoned(13:2);
+    Can_Reg_Rechados  Zoned(5);
   end-ds;
 
   dcl-ds dsRecord Qualified dim(1000) Inz;
@@ -235,9 +243,9 @@
       I_Fil += 1;
       dsFiles_Proc(I_Fil).Cod_File = dsAMADEUS_Files.ID;
       dsFiles_Proc(I_Fil).Dsc_File = dsAMADEUS_Files.Filename;
-      dsFiles_Proc(I_Fil).Tot_Reg_Rec = dsAMADEUS_Files.Cant_Reg;
-      dsFiles_Proc(I_Fil).Tot_Proc = 0;
-      dsFiles_Proc(I_Fil).Tot_Rec  = 0;
+      dsFiles_Proc(I_Fil).Tot_Reg_Procesados = dsAMADEUS_Files.Cant_Reg;
+      dsFiles_Proc(I_Fil).Tot_Imp_Aceptado = 0;
+      dsFiles_Proc(I_Fil).Tot_Imp_Rechazado = 0;
 
       Wcontador = 0;
       If Not Procesa_ANADEUS_Detail(dsAMADEUS_Files.ID);
@@ -255,7 +263,7 @@
     iF I_Fil > 0;
       Genera_Adjunto();
       Snd_File_IFS();
-      Genera_Content_data();
+      //Genera_Content_data();
       Envio_Correo();
     Endif;
 
@@ -362,8 +370,8 @@
 
       ErrorRecord = '';
       If Not Validar_Record(ErrorRecord);
-        dsFiles_Proc(I_Fil).Tot_Rec += dsAMABINDET.DEBIT_CREDIT_AMOUNT;
-        dsFiles_Proc(I_Fil).Can_Rec +=1;
+        dsFiles_Proc(I_Fil).Tot_Imp_Rechazado += dsAMABINDET.DEBIT_CREDIT_AMOUNT;
+        dsFiles_Proc(I_Fil).Can_Reg_Rechados +=1;
         dsRecord(Z).Cod_Error   = ErrorRecord;
 
         Exec SQL
@@ -383,25 +391,26 @@
         Iter;
 
       Else;
-        dsFiles_Proc(I_Fil).Tot_Proc += dsAMABINDET.DEBIT_CREDIT_AMOUNT;
+        dsFiles_Proc(I_Fil).Tot_Imp_Aceptado += dsAMABINDET.DEBIT_CREDIT_AMOUNT;
+        dsFiles_Proc(I_Fil).Can_Reg_Aceptado +=1;
 
-      Wcontador += 1;
-      Wnumref   += 1;
+        Wcontador += 1;
+        Wnumref   += 1;
 
-      // Aqui la logica para los NMOV
-      Reset dsNMOV;
-      Llena_Campos_NMOV();
-      Graba_datos_adicionales();
-      p_numero_operacion =
-        GRABA_ADQUIRENCIA_PROPIA(
-          P_id_fichero:
-          P_codigo_origen :dsNMOV);
-          Genera_DescrFac();
+        // Aqui la logica para los NMOV
+        Reset dsNMOV;
+        Llena_Campos_NMOV();
+        Graba_datos_adicionales();
+        p_numero_operacion =
+          GRABA_ADQUIRENCIA_PROPIA(
+            P_id_fichero:
+            P_codigo_origen :dsNMOV);
+            Genera_DescrFac();
 
         // Actualizacion del Registro con el numero de operacion
         if Not Actualiza_Record_Detail(1:ErrorRecord:p_numero_operacion);
-           sqlStt = '00000';
-           Iter;
+          sqlStt = '00000';
+          Iter;
         EndIf;
       EndIf;
 
@@ -456,6 +465,8 @@
     dcl-s WDC_Ent       Char(1);
     dcl-s WDC_Cal       Char(1);
     Dcl-s Wfec_Baj_Est  Zoned(6);
+
+    //Dcl-ds DSCardVault likeds(cardvault_t) Inz;    
 
     // Se valida que no sea Moneda diferente a EUR
     If dsAMABINDET.CURRENCY_CODE<>'EUR';
@@ -569,11 +580,17 @@
     // Si es Tarjeta Propia
     If WPais_Bin = 999;
       // Se valida Si existe en CARDVAULT
+      // If Not CARDVUASRV_OBTENER_DEL_NUREAL(Wsocio:'1':DSCardVault);
+      //   // Error Tarjeta no existe en CARDVAULT
+      //   ErrorRecord = 'BIN0007';
+      //   Return *Off;
+      // EndIf;      
+
       Exec Sql
         Select '1'
         Into :Wexiste_Tarj    
         From Atrium.CARDVAULT
-        Where Trim(V_PAN) = Trim(Char(:dsAMABINDET.CREDIT_CARD_NUMBER))
+        Where V_NUREAL = :Wsocio
         Limit 1;
 
       If SqlCode <> 0;
@@ -860,31 +877,31 @@
   //-----------------------------------------------------------------------------
   // Genera el Content_data para el Correo
   //-----------------------------------------------------------------------------
-  dcl-proc Genera_Content_data;
-    dcl-pi *n;
-    end-pi;
+  // dcl-proc Genera_Content_data;
+  //   dcl-pi *n;
+  //   end-pi;
 
-    Dcl-s I             Zoned(5);
-    dcl-s StrData       VarChar(2000);
+  //   Dcl-s I             Zoned(5);
+  //   dcl-s StrData       VarChar(2000);
 
-    For I = 1 to I_Fil;
-      StrData = %Trim(StrData) + '<tr>' +
-      '<td style="padding:10px 8px; border:1px solid #d9d9d9;">' + 
-            %Char(dsFiles_Proc(I).Cod_File)            + '</td>'   +
-      '<td style="padding:10px 8px; border:1px solid #d9d9d9;">' + 
-            %Trim(dsFiles_Proc(I).Dsc_File)              + '</td>' +
-      '<td style="padding:10px 8px; border:1px solid #d9d9d9; text-align:right;">' + 
-            %Editc(dsFiles_Proc(I).Tot_Proc:'2') + Euro + '</td>'  +
-      '<td style="padding:10px 8px; border:1px solid #d9d9d9; text-align:right;">' + 
-            %Editc(dsFiles_Proc(I).Tot_Rec:'2')  + Euro + '</td>'  +
-      '<td style="padding:10px 8px; border:1px solid #d9d9d9; text-align:right;">' + 
-            %Editc(dsFiles_Proc(I).Can_Rec:'2')        + '</td>'   +
-      '</tr>';
-    EndFor;
+  //   For I = 1 to I_Fil;
+  //     StrData = %Trim(StrData) + '<tr>' +
+  //     '<td style="padding:10px 8px; border:1px solid #d9d9d9;">' + 
+  //           %Char(dsFiles_Proc(I).Cod_File)            + '</td>'   +
+  //     '<td style="padding:10px 8px; border:1px solid #d9d9d9;">' + 
+  //           %Trim(dsFiles_Proc(I).Dsc_File)              + '</td>' +
+  //     '<td style="padding:10px 8px; border:1px solid #d9d9d9; text-align:right;">' + 
+  //           %Editc(dsFiles_Proc(I).Tot_Imp_Aceptado:'2') + Euro + '</td>'  +
+  //     '<td style="padding:10px 8px; border:1px solid #d9d9d9; text-align:right;">' + 
+  //           %Editc(dsFiles_Proc(I).Tot_Imp_Rechazado:'2')  + Euro + '</td>'  +
+  //     '<td style="padding:10px 8px; border:1px solid #d9d9d9; text-align:right;">' + 
+  //           %Editc(dsFiles_Proc(I).Can_Reg_Rechados:'2')        + '</td>'   +
+  //     '</tr>';
+  //   EndFor;
 
-    Content_data = %trim(StrData);
+  //   Content_data = %trim(StrData);
 
-  End-Proc;
+  // End-Proc;
   //-----------------------------------------------------------------------------
   // Arma Envio_Correo
   //-----------------------------------------------------------------------------
@@ -943,7 +960,18 @@
     JSON_SetBool( request : 'has_parameters' : *ON );
 
     parameters = json_newObject();
-    JSON_SetStr( parameters : 'contentData' : Content_data );
+    JSON_SetStr( parameters : 'fileId' : %Char(dsFiles_Proc(1).Cod_File) );
+    JSON_SetStr( parameters : 'fileName' : %Trim(dsFiles_Proc(1).Dsc_File ));
+    JSON_SetStr( parameters : 'numOpeProcessed' : 
+        %Char(dsFiles_Proc(1).Tot_Reg_Procesados)  );
+    JSON_SetStr( parameters : 'numOpeApproved' : 
+        %Char(dsFiles_Proc(1).Can_Reg_Aceptado) );
+    JSON_SetStr( parameters : 'approvedAmount' : 
+        %Editc(dsFiles_Proc(1).Tot_Imp_Aceptado:'J') );
+    JSON_SetStr( parameters : 'numOpeRejected' : 
+        %Char(dsFiles_Proc(1).Can_Reg_Rechados) );
+    JSON_SetStr( parameters : 'rejectedAmount' : 
+        %Editc(dsFiles_Proc(1).Tot_Imp_Rechazado:'J')  );
 
     json_MoveObjectInto(request : 'parameters' : parameters);
 

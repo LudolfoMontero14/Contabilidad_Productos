@@ -1,18 +1,16 @@
   PGM (&NomProc &NOMENV)
     dcl  &NomProc  *char  10
     dcl  &NOMENV   *char  10
-    dcl  &Numreg   *dec  (10 0) 
     dcl  &NUMAPU   *char   6
-
+call Noexiste
     /*------------------------------------------------------*/
-    /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */ 
+    /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */
     /*------------------------------------------------------*/
     CALL       PGM(PARALELOC/CEREFSN) +
-               PARM(&NomProc          +
-                    'ASICEREFSN'      +
+               PARM('ASICEREFSN'      +
                     'CABECERE'        +
                     'DETECERE'        +
-                    &NUMAPU)                 
+                    &NUMAPU)
 
     /*------------------------------------------------------*/
     /* Copia de Registros a Historicos                      */
@@ -21,20 +19,22 @@
                PARM('ASICEREFSN'      +
                     'CABECERE'        +
                     'DETECERE'        +
-                    &NOMENV)                 
+                    &NOMENV           +
+                    'N'               +
+                    'T')
 
     /*-------------------------------------------------------*/
     /* Actualiza Auditoria Paralelo                          */
     /*-------------------------------------------------------*/
     Call CONTAB101 Parm(&NomProc      +
-                    'ASICEREFSN'        +
+                    'CEREFSN'         +
+                    'ASICEREFSN'      +
                     'CABECERE'        +
-                    'CABECERE'        +
+                    'DETECERE'        +
                     &NUMAPU           +
-                    'CEREFSN')
-
+                    &NOMENV)
     /*--------------------------------*/
     /* Fin del CEREFSN New            */
-    /*--------------------------------*/    
+    /*--------------------------------*/
     DSPJOBLOG  OUTPUT(*OUTFILE) OUTFILE(LJMONTERO/CEREFSNJOB)
   endpgm

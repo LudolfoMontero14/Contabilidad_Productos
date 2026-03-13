@@ -4,7 +4,7 @@
   // Fecha: Octubre 2025                                            LM
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
-  // Prototipos 
+  // Prototipos
   //------------------------------------------------------------------------
   /IF DEFINED(PGM_ULTKEY)
     dcl-pr ULTKEY extPgm('ULTKEY');
@@ -61,12 +61,12 @@
 
   // ASIENTO
   dcl-pr CONTABSRV_Obtener_Datos_Asiento ind;
-    // Puede venir informada la clave para acceder a la tabla 
+    // Puede venir informada la clave para acceder a la tabla
     // ASIENTOS_CUENTAS_POR_PRODUCTO
-    // y los datos parametrizables los cogemos de ahí. 
+    // y los datos parametrizables los cogemos de ahí.
     // ESTE PARAMETRO TIENE PRIORIDAD.
     dsKeyAsiento likeds(dsKeyAsientoTpl);
-    // O puede venir informada una DS con los datos, que en vez de 
+    // O puede venir informada una DS con los datos, que en vez de
     // parametrizarse en tabla,
     // se mandan directamente por ser casos especiales.
     dsDatosAsientoParametrizables likeds(dsDatosAsientoParametrizablesTpl);
@@ -79,7 +79,7 @@
   dcl-pr CONTABSRV_Obtener_Datos_Parametrizados_Asiento ind;
     dsKeyAsiento likeds(dsKeyAsientoTpl);   // Parámetro de entrada
     // Parámetro de salida
-    dsDatosAsientoParametrizables likeds(dsDatosAsientoParametrizablesTpl); 
+    dsDatosAsientoParametrizables likeds(dsDatosAsientoParametrizablesTpl);
   end-pr;
 
   dcl-pr CONTABSRV_Grabar_Asiento ind;
@@ -114,15 +114,27 @@
     P_NomAsiPar   Char(10);
     P_NomCabpar   Char(10);
     P_NomDetpar   Char(10);
+    P_NomENV      Char(10); // Nombre Abiente Paralelo
   end-pr;
-  /ENDIF  
+
+  dcl-pr CONTABSRV_Guardar_Single_Asiento ind;
+      ID_Contab    Zoned(5);
+      ID_Orden     Zoned(2);
+      WCodprod     zoned(3:0);
+      P_Impor      Packed(14:3);
+      Num_Apunte   char(6) const;
+      fecproces    Zoned(8);
+      P_NomAsiPar  Char(10);
+  end-pr;
+
+  /ENDIF
   /IF DEFINED(PGM_ASBUNU)
   dcl-pr ASBUNU extPgm('ASBUNU');
     anio char(2);
     mes char(2);
     apunte char(6);
   end-pr;
-  /ENDIF  
+  /ENDIF
   //------------------------------------------------------------------------
   // Estructuras - templates
   //------------------------------------------------------------------------
@@ -676,23 +688,23 @@
       Total    Packed(14:3);
     end-ds;
     //------------------------------------------------------------------------
-    // Declaraciones de Variables 
+    // Declaraciones de Variables
     //------------------------------------------------------------------------
-    //--------------------------------------        
-    // Para evidencias                              
-    //--------------------------------------        
-    dcl-s  sqlError char(5) inz;                    
-    dcl-s  sqlMensaje char(70) inz;                 
-    dcl-s  marca char(1) inz;                       
-    dcl-s  numeroLinea zoned(5:0) inz;              
-    Dcl-s  V_observacion Varchar(5000) inz;         
-    Dcl-s  WnumLinea Zoned(5);                      
-    dcl-c  CREAR_TEMPORAL const('C');               
-    dcl-c  GRABAR_TEMPORAL const('G');              
-    dcl-c  GRABAR_A_FICHERO const('F');             
-    dcl-ds dsDetevi likeds(dsDeteviTempl) inz;      
+    //--------------------------------------
+    // Para evidencias
+    //--------------------------------------
+    dcl-s  sqlError char(5) inz;
+    dcl-s  sqlMensaje char(70) inz;
+    dcl-s  marca char(1) inz;
+    dcl-s  numeroLinea zoned(5:0) inz;
+    Dcl-s  V_observacion Varchar(5000) inz;
+    Dcl-s  WnumLinea Zoned(5);
+    dcl-c  CREAR_TEMPORAL const('C');
+    dcl-c  GRABAR_TEMPORAL const('G');
+    dcl-c  GRABAR_A_FICHERO const('F');
+    dcl-ds dsDetevi likeds(dsDeteviTempl) inz;
     //------------------------------------------------------------------------
     // Variables y Constantes
     //------------------------------------------------------------------------
     Dcl-c WComi   const(x'7D');
-  /ENDIF  
+  /ENDIF

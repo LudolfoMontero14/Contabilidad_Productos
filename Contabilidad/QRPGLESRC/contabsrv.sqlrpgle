@@ -4,7 +4,7 @@
   // UTLIDADES CONTABILIDAD
   //
   //**********************************************************************
-  // PROGRAMADOR: Ludolfo Montero 
+  // PROGRAMADOR: Ludolfo Montero
   // FECHA: Octubre 2025
   //**********************************************************************
   // PROTOTYPES:
@@ -54,14 +54,14 @@
     out_sqlError = *blanks;
     out_sqlMensaje = *blanks;
 
-    SqlStr = 
+    SqlStr =
       'INSERT INTO '                                       +
       %Trim(in_NomCabpar)                                  +
       ' (CDESCR, CNUAPU, CFEALT, CFEBAJ, CNUEVI, CIDMOD) ' +
       'VALUES(?,?,?,?,?,?)';
 
     exec sql prepare SZ from :SqlStr;
-    exec sql execute SZ using 
+    exec sql execute SZ using
         :in_dsCabevi.descripcion,
         :in_dsCabevi.numeroApunte,
         :in_dsCabevi.fechaConciliacion,
@@ -73,7 +73,7 @@
     If sqlStt <> '00000';
       out_sqlError = sqlStt;
       Exec Sql
-        GET DIAGNOSTICS EXCEPTION 1 
+        GET DIAGNOSTICS EXCEPTION 1
         :out_sqlMensaje = MESSAGE_TEXT;
       return *off;
     EndIf;
@@ -165,7 +165,7 @@
       EndIf;
 
     On-Error;
-      out_sqlMensaje = 
+      out_sqlMensaje =
       'Error Monitorizado. CONTABSRV_Crear_Fichero_Detalle_Evidencia_Temporal';
       return *off;
     EndMon;
@@ -206,7 +206,7 @@
       EndIf;
 
     On-Error;
-      out_sqlMensaje = 
+      out_sqlMensaje =
         'Error Monitorizado. CONTABSRV_Grabar_Detalle_Evidencia_Temporal';
       return *off;
     EndMon;
@@ -244,7 +244,7 @@
       EndIf;
 
     On-Error;
-      out_sqlMensaje = 
+      out_sqlMensaje =
         'Error Monitorizado. CONTABSRV_Grabar_Detalles_Evidencias';
       return *off;
     EndMon;
@@ -269,7 +269,7 @@
     out_sqlError = *blanks;
     out_sqlMensaje = *blanks;
 
-    SqlStr = 
+    SqlStr =
       'DELETE FROM '                                    +
       %trim(in_NomCabpar)                               +
       ' WHERE CNUAPU = ' + in_dsCabevi.numeroApunte     +
@@ -280,7 +280,7 @@
     Monitor;
       Exec Sql
         Execute Immediate :SqlStr;
-    
+
       If sqlStt <> '00000';
         out_sqlError = sqlStt;
         Exec Sql
@@ -289,7 +289,7 @@
       EndIf;
 
     On-Error;
-      out_sqlMensaje = 
+      out_sqlMensaje =
         'Error Monitorizado. CONTABSRV_Borrar_Evidencias_Contables_Cabecera';
       return *off;
     EndMon;
@@ -300,7 +300,7 @@
 
   //---------------------------------------------------------------
   // Obtener Datos de Asiento
-  // Si está informado dsKeyAsiento lo uso para cargar 
+  // Si está informado dsKeyAsiento lo uso para cargar
   // dsDatosAsientoParametrizables
   // Si no está informado dsKeyAsiento uso dsDatosAsientoParametrizables
   //---------------------------------------------------------------
@@ -309,13 +309,13 @@
     dcl-pi *n ind;
       dsKeyAsiento likeds(dsKeyAsientoTpl);
       dsDatosAsientoParametrizables likeds(dsDatosAsientoParametrizablesTpl);
-      dsDatosAsientoNoParametrizables 
+      dsDatosAsientoNoParametrizables
           likeds(dsDatosAsientoNoParametrizablesTpl);
       dsAsifilen likeds(dsAsifilenTpl);
       textoError char(100);
     end-pi;
 
-    dcl-ds dsDatosAsientoParametrizablesSinDato 
+    dcl-ds dsDatosAsientoParametrizablesSinDato
            likeds(dsDatosAsientoNoParametrizablesTpl) inz;
 
     exsr ValidacionesDatosAsiento;
@@ -341,7 +341,7 @@
     dsAsifilen.ctipro = dsDatosAsientoParametrizables.tipoProcedencia;
     dsAsifilen.cctana = dsDatosAsientoParametrizables.cuentaNavision;
     dsAsifilen.ccodma = dsDatosAsientoParametrizables.codigoMayor;
-    dsAsifilen.crefde = 
+    dsAsifilen.crefde =
                dsDatosAsientoParametrizables.referenciaDocumentoExterna;
     dsAsifilen.cddept = dsDatosAsientoParametrizables.dimensionDepartamento;
     dsAsifilen.cdanlt = dsDatosAsientoParametrizables.dimensionConcepto;
@@ -363,8 +363,8 @@
 
       if textoError = *blanks and (dsKeyAsiento.idAsiento <= 0
           or dsKeyAsiento.ordenApunte <= 0
-          or dsKeyAsiento.codProducto <= 0)
-          and (dsDatosAsientoNoParametrizables = 
+          or dsKeyAsiento.codProducto < 0)
+          and (dsDatosAsientoNoParametrizables =
               dsDatosAsientoParametrizablesSinDato);
         textoError = 'No enviados ni clave ni datos parametrizados de asiento';
       endif;
@@ -377,17 +377,17 @@
             parametrizados de asiento';
       endif;
 
-      if textoError = *blanks and 
+      if textoError = *blanks and
           (dsDatosAsientoParametrizables.proceso = *blanks
           or dsDatosAsientoParametrizables.descripcionAsiento = *blanks
           or dsDatosAsientoParametrizables.tipoProcedencia = *blanks
           //or dsDatosAsientoParametrizables.cuentaNavision = *blanks
           or dsDatosAsientoParametrizables.codigoMayor = *blanks);
-        textoError = 
+        textoError =
             'Faltan algunos campos clave de datos parametrizados del asiento';
       endif;
 
-      if textoError = *blanks and 
+      if textoError = *blanks and
          dsDatosAsientoNoParametrizables.numApunte = *blanks;
         textoError = 'Número de apunte no enviado';
       endif;
@@ -418,7 +418,7 @@
       endif;
 
       // Opcional pero si se envía debe ser correcta
-      if textoError = *blanks and 
+      if textoError = *blanks and
          dsDatosAsientoNoParametrizables.fechaVencimiento <> 0;
         test(de) *eur dsDatosAsientoNoParametrizables.fechaVencimiento;
         if (%error);
@@ -447,6 +447,13 @@
   //---------------------------------------------------------------
   dcl-proc CONTABSRV_Obtener_Datos_Parametrizados_Asiento export;
 
+    Dcl-s WMarca   Zoned(2);
+    dcl-s wconciliacion char(1);
+    Dcl-s WExiste_Cod   Ind;
+    Dcl-s WCodDiv  Char(3);
+    dcl-s Wcodprod zoned(3);
+    dcl-s Wcomodin zoned(3);
+
     dcl-pi *n ind;
       dsKeyAsiento likeds(dsKeyAsientoTpl);
       dsDatosAsientoParametrizables likeds(dsDatosAsientoParametrizablesTpl);
@@ -454,27 +461,131 @@
 
     if dsKeyAsiento.idAsiento <= 0
         or dsKeyAsiento.ordenApunte <= 0
-        or dsKeyAsiento.codProducto <= 0;
+        or dsKeyAsiento.codProducto < 0;
       return *off;
     endif;
+    Wcodprod = dsKeyAsiento.codProducto;
+    if wcodprod <>0;
+      Exec SQL
+        Select '1'
+        Into :WExiste_Cod
+        From ASIENTOS_CUENTAS_POR_PRODUCTO
+        Where
+        ID_ASIENTO = :dsKeyAsiento.idAsiento
+        AND ORDEN_APUNTE = :dsKeyAsiento.ordenApunte
+        AND CODIGO_PRODUCTO = :dsKeyAsiento.codProducto;
 
+      If Sqlcode <> 0;
+        WExiste_Cod =*off;
+        //Exec SQL
+        //Select Codigo_Marca, DIVISA_ISO, conciliacion
+        //Into :WMarca, :WCodDiv , :wConciliacion
+        //From PRODUCTOS_DCS
+        //Where
+        //  CODIGO_PRODUCTO = :dsKeyAsiento.codProducto;
+        Exec SQL
+        Select comodin_contable
+        Into :Wcomodin
+        From PRODUCTOS_DCS
+        Where
+          CODIGO_PRODUCTO = :dsKeyAsiento.codProducto;
+        If Sqlcode = 0 AND wcomodin <>0;
+          wcodprod=wcomodin;
+        //Select;
+        //  When  Not WExiste_Cod and
+        //    WMarca=1 and
+        //    WCodDiv='EUR'; // Valida Diners EUR
+        //    Wcodprod= 999;
+        //  When  Not WExiste_Cod and
+        //    WMarca=2 and
+        //    WCodDiv='EUR'; // Valida MC EUR
+        //    Wcodprod = 998;
+        //  When  Not WExiste_Cod and
+        //    WMarca=1 and
+        //    WCodDiv='GBP'; // Valida Diners GBP
+        //    Wcodprod = 995;
+        //  When  Not WExiste_Cod and
+        //    WMarca=2 and
+        //    WCodDiv='GBP'; // Valida MC GBP
+        //    Wcodprod = 994;
+        //  When  Not WExiste_Cod and
+        //    WMarca=1 and
+        //    WCodDiv='USD'; // Valida Diners USD
+        //    Wcodprod= 997;
+        //  When  Not WExiste_Cod and
+        //    WMarca=2 and
+        //    WCodDiv='USD'; // Valida MC USD
+        //    Wcodprod = 996;
+        //EndSl;
+        endif; // Existe producto y comoodin <>0
+      EndIf; //Existe por producto
+    endif;//Producto 0
     Exec Sql
-      SELECT 
-        PROCESO, DESCRIPCION_ASIENTO, TIPO_PROCEDENCIA, CUENTA_NAVISION, 
-        CODIGO_MAYOR, CUENTA_MAYOR, FICHERO_ASOCIADO, CUENTA_AUXILIAR, 
-        CODIGO_CONCEPTO, TEXTO_CONCEPTO, REFERENCIA_DOCUMENTO_EXTERNA, 
-        DIMENSION_DEPARTAMENTO, DIMENSION_CONCEPTO, DIMENSION_JERARQUIA, 
+      SELECT
+        PROCESO, DESCRIPCION_ASIENTO, TIPO_PROCEDENCIA, CUENTA_NAVISION,
+        CODIGO_MAYOR, CUENTA_MAYOR, FICHERO_ASOCIADO, CUENTA_AUXILIAR,
+        CODIGO_CONCEPTO, TEXTO_CONCEPTO, REFERENCIA_DOCUMENTO_EXTERNA,
+        DIMENSION_DEPARTAMENTO, DIMENSION_CONCEPTO, DIMENSION_JERARQUIA,
         DIMENSION_GASTOS, DIMENSION_PRODUCTO, DIMENSION_LIBRE1,
         DIMENSION_LIBRE2, DIMENSION_LIBRE3
       into :dsDatosAsientoParametrizables
       FROM FICHEROS.ASIENTOS_CUENTAS_POR_PRODUCTO
       WHERE ID_ASIENTO = :dsKeyAsiento.idAsiento
         AND ORDEN_APUNTE = :dsKeyAsiento.ordenApunte
-        AND CODIGO_PRODUCTO = :dsKeyAsiento.codProducto;
+        AND CODIGO_PRODUCTO = :Wcodprod;
 
-    return sqlStt = '00000';
+    // Si no existe registro de parametrización se genera parametros FAKE
+    If Sqlcode <> 0;
+      //Reset dsDatosAsientoParametrizables;
+      dsDatosAsientoParametrizables.proceso = 'K'+
+       %editc(dsKeyAsiento.idAsiento:'X');
+      dsDatosAsientoParametrizables.descripcionAsiento = 'Descripcion FAKE';
+      dsDatosAsientoParametrizables.tipoProcedencia= '0';
+      dsDatosAsientoParametrizables.cuentaNavision= ' ';
+      dsDatosAsientoParametrizables.codigoMayor =
+        'XXX-' + %Editc(dsKeyAsiento.idAsiento:'X') + '-' +
+        %Editc(dsKeyAsiento.ordenApunte:'X') + '-' +
+        %editc(dsKeyAsiento.codProducto:'X');
+      dsDatosAsientoParametrizables.cuentaMayor = ' ';
+      dsDatosAsientoParametrizables.ficheroAsociado = ' ';
+      dsDatosAsientoParametrizables.cuentaAuxiliar = ' ';
+      dsDatosAsientoParametrizables.codigoConcepto = 0;
+      dsDatosAsientoParametrizables.textoConcepto = 'Descripcion FAKE @@@';
+      dsDatosAsientoParametrizables.referenciaDocumentoExterna = ' ';
+      dsDatosAsientoParametrizables.dimensionDepartamento = ' ';
+      dsDatosAsientoParametrizables.dimensionConcepto = ' ';
+      dsDatosAsientoParametrizables.dimensionJerarquia = ' ';
+      dsDatosAsientoParametrizables.dimensionGastos = ' ';
+      dsDatosAsientoParametrizables.dimensionProducto = ' ';
+      dsDatosAsientoParametrizables.dimensionLibre1 = '  ';
+      dsDatosAsientoParametrizables.dimensionLibre2 = '  ';
+      dsDatosAsientoParametrizables.dimensionLibre3 = '  ';
+    EndIf;
+    //return sqlStt = '00000';
+    //Sqlcode = 0;
+      Actualiza_texto_concepto
+      (dsDatosAsientoParametrizables.textoConcepto:dsKeyAsiento.codProducto);
+
+    return *on;
 
   end-proc;
+
+    //---------------------------------------------------------------
+  // Actualiza_texto_concepto
+  //---------------------------------------------------------------
+  dcl-proc Actualiza_texto_concepto;
+
+    dcl-s w_codproducto char(3);
+    dcl-s w_textoConcepto varchar(30);
+    dcl-pi *n ;
+      p_textoConcepto varchar(30);
+      p_codProducto zoned(3:0);
+    end-pi;
+     w_codproducto = %Editc(p_codProducto:'X');
+     w_textoConcepto =  p_textoConcepto;
+     p_textoConcepto = %ScanRpl( '@@@': w_codProducto:w_textoconcepto);
+
+    end-proc;
 
   //---------------------------------------------------------------
   // Grabar Asiento
@@ -489,7 +600,7 @@
     end-pi;
 
 
-    SqlStr = 
+    SqlStr =
       'INSERT INTO '                                               +
       P_NomAsiPar                                                  +
       ' (CAPUNT, CCTAMA, CCTAFI, CCTAAU, CCODIG, CPROGR, '         +
@@ -498,12 +609,12 @@
         'CREFDE, CDDEPT, CDANLT, CDEBAN, CDPERS, CDGFIN, '         +
         'CDIM06, CDIM07, CDIM08) '                                 +
       'VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-    ;    
+    ;
 
     exec sql prepare SX from :SqlStr;
 
     Monitor;
-      exec sql execute SX using 
+      exec sql execute SX using
         :dsAsifilen.capunt,
         :dsAsifilen.cctama,
         :dsAsifilen.cctafi,
@@ -511,7 +622,7 @@
         :dsAsifilen.ccodig,
         :dsAsifilen.cprogr,
         :dsAsifilen.cfecon,
-        :dsAsifilen.cdeha, 
+        :dsAsifilen.cdeha,
         :dsAsifilen.crefop,
         :dsAsifilen.cfevto,
         :dsAsifilen.cconce,
@@ -533,7 +644,7 @@
         :dsAsifilen.cdim08;
       // Exec Sql
       //   Execute Immediate :SqlStr;
-    
+
       If sqlStt <> '00000';
         sqlError = sqlStt;
         Exec Sql
@@ -589,10 +700,9 @@
     end-pi;
 
     Dcl-s I        Zoned(3);
-    Dcl-s WMarca   Zoned(2);
     Dcl-s WCodProd Zoned(3);
-    Dcl-s WExiste_Cod   Ind;
-    Dcl-s WCodDiv  Char(3);
+    //Dcl-s WExiste_Cod   Ind;
+    //Dcl-s WCodDiv  Char(3);
 
     Sqlcode = 0;
     For I=1 to Inx;
@@ -602,67 +712,67 @@
       // If WCodProd = 901;
       //   WMarca = 1; // Diners ADQ
       // Else;
-      Exec SQL
-        Select Codigo_Marca, DIVISA_ISO
-        Into :WMarca, :WCodDiv
-        From PRODUCTOS_DCS
-        Where
-          CODIGO_PRODUCTO = :WCodProd;
+      //Exec SQL
+      //  Select Codigo_Marca, DIVISA_ISO
+      //  Into :WMarca, :WCodDiv
+      //  From PRODUCTOS_DCS
+      //  Where
+      //    CODIGO_PRODUCTO = :WCodProd;
       //Endif;
 
-      If Sqlcode < 0;
-        observacionSql = 'CONTABSRV_Genera_Contabilidad_Totales_Producto: ' +
-                         'Error en Select PRODUCTOS_DCS';
-        Clear Nivel_Alerta;
-        Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-      EndIf;
-      If SQLCODE<>0;
-          Iter;
-      EndIf;
+      //If Sqlcode < 0;
+      //  observacionSql = 'CONTABSRV_Genera_Contabilidad_Totales_Producto: ' +
+      //                   'Error en Select PRODUCTOS_DCS';
+      //  Clear Nivel_Alerta;
+      //  Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
+      //EndIf;
+      //If SQLCODE<>0;
+      //    Iter;
+      //EndIf;
 
-      Exec SQL
-        Select '1'
-        Into :WExiste_Cod
-        From ASIENTOS_CUENTAS_POR_PRODUCTO
-        Where
-          ID_ASIENTO = :ID_Contab
-          AND CODIGO_PRODUCTO = :WCodProd
-        Limit 1;
+      //Exec SQL
+      //  Select '1'
+      //  Into :WExiste_Cod
+      //  From ASIENTOS_CUENTAS_POR_PRODUCTO
+      //  Where
+      //    ID_ASIENTO = :ID_Contab
+      //    AND CODIGO_PRODUCTO = :WCodProd
+      //  Limit 1;
 
-      If Sqlcode < 0;
-        observacionSql = 'CONTABSRV_Genera_Contabilidad_Totales_Producto: ' +
-                         'Error en Select ASIENTOS_CUENTAS_POR_PRODUCTO';
-        Clear Nivel_Alerta;
-        Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-        Iter;
-      EndIf;
+      //If Sqlcode < 0;
+      //  observacionSql = 'CONTABSRV_Genera_Contabilidad_Totales_Producto: ' +
+      //                   'Error en Select ASIENTOS_CUENTAS_POR_PRODUCTO';
+      //  Clear Nivel_Alerta;
+      //  Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
+       // Iter;
+      //EndIf;
 
-      Select;
-        When  Not WExiste_Cod and 
-              WMarca=1 and 
-              WCodDiv='EUR'; // Valida Diners EUR
-          WCodprod = 999;
-        When  Not WExiste_Cod and 
-              WMarca=2 and 
-              WCodDiv='EUR'; // Valida MC EUR
-          WCodprod = 998;
-        When  Not WExiste_Cod and 
-              WMarca=1 and 
-              WCodDiv='GBP'; // Valida Diners GBP
-          WCodprod = 995;
-        When  Not WExiste_Cod and 
-              WMarca=2 and 
-              WCodDiv='GBP'; // Valida MC GBP
-          WCodprod = 994;
-        When  Not WExiste_Cod and 
-              WMarca=1 and 
-              WCodDiv='USD'; // Valida Diners USD
-          WCodprod = 997;
-        When  Not WExiste_Cod and 
-              WMarca=2 and 
-              WCodDiv='USD'; // Valida MC USD
-          WCodprod = 996;
-      EndSl;
+      //Select;
+      //  When  Not WExiste_Cod and
+      //        WMarca=1 and
+      //        WCodDiv='EUR'; // Valida Diners EUR
+      //    WCodprod = 999;
+      //  When  Not WExiste_Cod and
+      //        WMarca=2 and
+      //        WCodDiv='EUR'; // Valida MC EUR
+      //    WCodprod = 998;
+      //  When  Not WExiste_Cod and
+      //        WMarca=1 and
+      //        WCodDiv='GBP'; // Valida Diners GBP
+      //    WCodprod = 995;
+      //  When  Not WExiste_Cod and
+      //        WMarca=2 and
+      //        WCodDiv='GBP'; // Valida MC GBP
+      //    WCodprod = 994;
+      //  When  Not WExiste_Cod and
+      //        WMarca=1 and
+      //        WCodDiv='USD'; // Valida Diners USD
+      //    WCodprod = 997;
+      //  When  Not WExiste_Cod and
+      //        WMarca=2 and
+      //        WCodDiv='USD'; // Valida MC USD
+      //    WCodprod = 996;
+      //EndSl;
 
       if not CONTABSRV_Guardar_Asiento_Total_producto(
              WCodprod
@@ -764,7 +874,7 @@
           :sqlError
           :sqlMensaje
           :P_NomAsiPar);
-      observacionSql = 
+      observacionSql =
           'CONTABSRV_Grabar_Asiento: Error: ' + sqlError       +
           '.' + %Trim(sqlMensaje);
       Clear Nivel_Alerta;
@@ -798,10 +908,10 @@
 
     // Declaracion de Cursor de los ficheros a Copiar
     Exec Sql declare  C_Fic_Copy Cursor For
-      Select 
-        FILE_REQUERIDO, FILE_TYPE, FILE_LIB_SRC, 
-        FILE_NAME_SRC, FILE_SRC, FILE_DATA 
-      From PARALELOC.PARALELO_COFIG_PROCESS
+      Select
+        FILE_REQUERIDO, FILE_TYPE, FILE_LIB_SRC,
+        FILE_NAME_SRC, FILE_SRC, FILE_DATA
+      From PARALELOC.Paralelo_Config_Process
       Where
         ID_PROCESO = :P_NomProc
         And ESTATUS = 'A';
@@ -814,14 +924,14 @@
       Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
       Return *Off;
     EndIf;
-      
+
     dow sqlStt = '00000';
-      Exec Sql Fetch From  C_Fic_Copy into 
-            :WFile_Req, :WFile_Typ, :WFile_Lib, 
+      Exec Sql Fetch From  C_Fic_Copy into
+            :WFile_Req, :WFile_Typ, :WFile_Lib,
             :WFile_name, :WFile_src, :WFile_Data;
       If sqlStt <> '00000';
         Leave;
-      EndIf;    
+      EndIf;
 
       If WFile_Src <> ' ' and WFile_name <> ' ';
         WFile_Existe = *off;
@@ -834,15 +944,15 @@
         ;
         If WFile_Existe;
           WCmd = 'CLRPFM FILE('                 +
-          %Trim(P_ENV) + '/'                    + 
-          %Trim(WFile_Req) + ')';          
+          %Trim(P_ENV) + '/'                    +
+          %Trim(WFile_Req) + ')';
 
         Else;
-          WCmd = 
+          WCmd =
           'CRTPF FILE('                         +
-          %Trim(P_ENV) + '/'                    + 
+          %Trim(P_ENV) + '/'                    +
           %Trim(WFile_Req) + ') '               +
-          'SRCFILE('                            +    
+          'SRCFILE('                            +
           %Trim(WFile_Lib) + '/'                +
           %trim(WFile_src) + ') SRCMBR('        +
           %Trim(WFile_name) + ') '              +
@@ -852,20 +962,20 @@
         EndIf;
       Else;
         If WFile_Data = 'S';
-          WCmd = 
+          WCmd =
           'CPYF FROMFILE('                      +
           %Trim(WFile_Lib) + '/'                +
-          %Trim(WFile_Req) + ') '               + 
+          %Trim(WFile_Req) + ') '               +
           'TOFILE(' + %trim(P_ENV) + '/'        +
-          %Trim(WFile_Req) + ') '               + 
+          %Trim(WFile_Req) + ') '               +
           'MBROPT(*REPLACE) CRTFILE(*YES)';
         Else;
-          WCmd = 
-          'CRTDUPOBJ '                          + 
+          WCmd =
+          'CRTDUPOBJ '                          +
           'OBJ('                                +
-          %Trim(WFile_Req) + ') '               + 
+          %Trim(WFile_Req) + ') '               +
           'FROMLIB('                            +
-          %Trim(WFile_Lib) + ') '               + 
+          %Trim(WFile_Lib) + ') '               +
           'OBJTYPE(*FILE) '                     +
           'TOLIB(' + %trim(P_ENV)               +
           'DATA(*NO)';
@@ -873,7 +983,7 @@
       EndIf;
 
       monitor;
-        exec sql CALL QSYS2.QCMDEXC(:WCmd) ;      
+        exec sql CALL QSYS2.QCMDEXC(:WCmd) ;
       on-error;
         // Captura de diagnóstico SQL estándar
         exec sql
@@ -883,7 +993,7 @@
             :MsgTxt   = MESSAGE_TEXT;
 
         observacionSql = 'CONTABSRV_Copy_Ficheros_Paralelo: ' +
-            'SqlState=' + SqlState                            + 
+            'SqlState=' + SqlState                            +
             ' SqlCode=' + %Editc(SqlCode:'X')                 +
             ' MSG:' + %Trim(MsgTxt);
         Clear Nivel_Alerta;
@@ -896,38 +1006,41 @@
 
     EndDo;
 
-    Exec Sql Close  C_SolPend; 
+    Exec Sql Close  C_SolPend;
 
     Return *On;
   end-proc;
   //-----------------------------------------------------------------
-  // Inserta registro de Auditoria 
+  // Inserta registro de Auditoria
   //-----------------------------------------------------------------
   dcl-proc CONTABSRV_Registro_Auditoria_Paralelo export;
 
     dcl-pi *n;
-      P_ProcEjec    Char(10);
-      P_NomProc     Char(10);
-      P_NumApun     Char(6);
-      P_NomAsiPar   Char(10);
-      P_NomCabpar   Char(10);
-      P_NomDetpar   Char(10);
+      P_ProcEjec    Char(10); // Ej. FS01COM, FS01M...
+      P_NomProc     Char(10); // Ej. CEREFSN, FSPAFAN, ....
+      P_NumApun     Char(6);  // Numero de Apunte
+      P_NomAsiPar   Char(10); // Nombre Parcial ASIFILEN
+      P_NomCabpar   Char(10); // Nombre Parcial CABEVI
+      P_NomDetpar   Char(10); // Nombre Parcial DETEVI
+      P_NomENV      Char(10); // Nombre Abiente Paralelo
     end-pi;
-    
+
     dcl-s WUSER    Char(10) Inz(*USER);
 
     EXEC SQL
-      INSERT INTO PARALELOC.Paralelo_Audit_Process 
+      INSERT INTO PARALELOC.Paralelo_Audit_Process
         (ID_PROCESO, ID_PROC_EJECUTOR, NUM_APUNTE, NOM_ASI_PARCIAL,
-        NOM_CAB_PARCIAL, NOM_DET_PARCIAL, FEC_CREACION, USUARIO_CREACION)
+        NOM_CAB_PARCIAL, NOM_DET_PARCIAL, Name_Enviroment,
+        FEC_CREACION, USUARIO_CREACION)
       VALUES (
-        :P_NomProc, 
-        :P_ProcEjec, 
-        :P_NumApun, 
-        :P_NomAsiPar, 
-        :P_NomCabpar, 
-        :P_NomDetpar, 
-        Current TimeStamp, 
+        :P_NomProc,
+        :P_ProcEjec,
+        :P_NumApun,
+        :P_NomAsiPar,
+        :P_NomCabpar,
+        :P_NomDetpar,
+        :P_NomENV,
+        Current TimeStamp,
         :WUSER);
 
     If Sqlcode < 0;
@@ -937,4 +1050,68 @@
       Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
       //Return *Off;
     EndIf;
-  end-proc;  
+  end-proc;
+  //-----------------------------------------------------------
+  // Guardar / Valida Asiento indivdual por producto
+  //-----------------------------------------------------------
+  dcl-proc CONTABSRV_Guardar_Single_Asiento export;
+
+    dcl-pi *n ind;
+      ID_Contab    Zoned(5);
+      ID_Orden     Zoned(2);
+      WCodprod     zoned(3:0);
+      P_Impor      Packed(14:3);
+      Num_Apunte   char(6) const;
+      fecproces    Zoned(8);
+      P_NomAsiPar  Char(10);
+    end-pi;
+
+    dcl-ds dsKeyAsiento likeds(dsKeyAsientoTpl) inz;
+    dcl-ds dsDatosAsientoParametrizables
+            likeds(dsDatosAsientoParametrizablesTpl) inz;
+    dcl-ds dsDatosAsientoNoParametrizables
+            likeds(dsDatosAsientoNoParametrizablesTpl) inz;
+    dcl-ds dsAsifilen likeds(dsAsifilenTpl) inz;
+    dcl-s textoError char(100) inz;
+    dcl-s sqlError char(5) inz;
+    dcl-s sqlMensaje char(70) inz;
+
+    dsDatosAsientoNoParametrizables.numApunte = Num_Apunte;
+    dsDatosAsientoNoParametrizables.fechaContable = fecproces ;
+    dsDatosAsientoNoParametrizables.referenciaOperacion = *blanks;
+    dsDatosAsientoNoParametrizables.fechaVencimiento = 0;
+    dsDatosAsientoNoParametrizables.codMoneda = '1';
+    dsDatosAsientoNoParametrizables.apunteProvisional = *blanks;
+    dsDatosAsientoNoParametrizables.tipoOperacion = 0;
+
+    dsKeyAsiento.idAsiento = ID_Contab;
+    dsKeyAsiento.ordenApunte = ID_Orden;
+    dsKeyAsiento.codProducto = WCodprod;
+
+    if P_Impor >= 0;
+      dsDatosAsientoNoParametrizables.debeHaber = 'H';
+    else;
+      dsDatosAsientoNoParametrizables.debeHaber = 'D';
+    endif;
+    dsDatosAsientoNoParametrizables.importe = %abs(P_Impor);
+
+    if not CONTABSRV_Obtener_Datos_Asiento(
+             dsKeyAsiento
+            :dsDatosAsientoParametrizables
+            :dsDatosAsientoNoParametrizables
+            :dsAsifilen
+            :textoError);
+      // Agregar funcion de monitoreo de Errores y correo
+      return *off;
+    endif;
+
+    if not CONTABSRV_Grabar_Asiento(dsAsifilen
+          :sqlError
+          :sqlMensaje
+          :P_NomAsiPar);
+      // Agregar funcion de monitoreo de Errores y correo
+      return *off;
+    endif;
+
+    return *on;
+  end-proc;

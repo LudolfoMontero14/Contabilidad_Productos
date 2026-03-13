@@ -20,7 +20,8 @@ PGM (&NomProc &NOMENV)
                     'CABEPAFA'        +
                     'DETEPAFA'        +
                     &NOMENV           +
-                    'N')
+                    'N'               +
+                    'T')
 
     /*-------------------------------------------------------*/
     /* Actualiza Auditoria Paralelo                          */

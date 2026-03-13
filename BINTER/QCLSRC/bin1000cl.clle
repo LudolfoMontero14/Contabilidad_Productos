@@ -32,7 +32,7 @@
 /*------------------------------------------------------------------*/
              RTVSYSVAL  SYSVAL(QDATE) RTNVAR(&FECHA)
 
-             CALL PGM(NOEXISTE)
+       /*    CALL PGM(NOEXISTE)     */
 
              CHGJOB     DATE(&FECHA)
 /*------------------------------------------------------------------*/
@@ -112,12 +112,12 @@
 /*------------------------------------------------------------------*/
 /* Activacion de Control de Compromiso                              */
 /*------------------------------------------------------------------*/
-          /*   STRCMTCTL  LCKLVL(*ALL) */
+            /* STRCMTCTL  LCKLVL(*ALL)*/ 
 /*------------------------------------------------------------------*/
 /* Procesa los registros Pendientes y Genera el NMOV                */
 /*------------------------------------------------------------------*/
         /* Monta las librerias necesarias para el NOXDB */
-             CALL       PGM(RESTDINERS/WHWEBSETLB)
+             /*CALL       PGM(RESTDINERS/WHWEBSETLB)*/
 
              CALL       PGM(BIN0100) PARM(&TRAALF +
                           &RANDES &RANHAS)
@@ -161,3 +161,4 @@
 /*-------------------------------------------------------------------*/
  FINAL:
  ENDPGM:     ENDPGM
+

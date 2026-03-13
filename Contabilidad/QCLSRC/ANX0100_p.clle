@@ -2,7 +2,13 @@ PGM (&NomProc &NOMENV)
     dcl  &NomProc  *char  10
     dcl  &NOMENV   *char  10
     dcl  &NUMAPU   *char   6
+    DCL  &MSG     *CHAR  300
 
+
+    STRJRNPF FILE(&NOMENV/*ALL)   +
+        JRN(FICHEROS/DIARIO) IMAGES(*BOTH)
+
+     STRCMTCTL  LCKLVL(*ALL)
     /*------------------------------------------------------*/
     /* Asiento traspaso pa a fa Diners/MC                   */
     /*------------------------------------------------------*/
@@ -11,7 +17,25 @@ PGM (&NomProc &NOMENV)
                     'CABEANX'         +
                     'DETEANX'         +
                     &NUMAPU)
+    MONMSG MSGID(CPF0000 RPG0000) EXEC(DO)
+      /* Si hay error, hacer rollback y salir del programa */
+      ROLLBACK
+      ENDCMTCTL
 
+      CHGVAR     VAR(&MSG) +
+      VALUE('** ERROR EN EL PROCESO DE ANEXOS (NUEVO) ** +
+      PARALELO --> CLP.ANX0100_P')
+
+      SNDDST     TYPE(*LMSG) +
+      TOINTNET((ljmontero@dinersclub.es)) +
+      DSTD('ANX0100_P:ACTUALIZACION DIARIA (SOLICITUDES)') +
+      LONGMSG(&MSG)
+
+      GOTO CMDLBL(FINFIN)
+    ENDDO
+    /* Se actualiza los cambios si no hay errores */
+    COMMIT
+    ENDCMTCTL
     /*------------------------------------------------------*/
     /* Copia de Registros a Historicos                      */
     /*------------------------------------------------------*/
@@ -20,20 +44,22 @@ PGM (&NomProc &NOMENV)
                     'CABEANX'        +
                     'DETEANX'        +
                     &NOMENV           +
-                    'N')
+                    'N'               +
+                    'T')
 
     /*-------------------------------------------------------*/
     /* Actualiza Auditoria Paralelo                          */
     /*-------------------------------------------------------*/
     Call CONTAB101 Parm(&NomProc      +
                     'ANX0100'         +
-                    'ASIANEXOS'      +
-                    'CABEANX'        +
-                    'DETEANX'        +
+                    'ASIANEXOS'       +
+                    'CABEANX'         +
+                    'DETEANX'         +
                     &NUMAPU           +
                     &NOMENV)
     /*--------------------------------*/
     /* Fin del CEREFSN New            */
     /*--------------------------------*/
     DSPJOBLOG  OUTPUT(*OUTFILE) OUTFILE(LJMONTERO/ANX0100JOB)
+FINFIN:
 endpgm
