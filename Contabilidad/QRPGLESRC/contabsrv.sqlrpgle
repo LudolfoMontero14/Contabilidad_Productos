@@ -477,12 +477,7 @@
 
       If Sqlcode <> 0;
         WExiste_Cod =*off;
-        //Exec SQL
-        //Select Codigo_Marca, DIVISA_ISO, conciliacion
-        //Into :WMarca, :WCodDiv , :wConciliacion
-        //From PRODUCTOS_DCS
-        //Where
-        //  CODIGO_PRODUCTO = :dsKeyAsiento.codProducto;
+
         Exec SQL
         Select comodin_contable
         Into :Wcomodin
@@ -491,35 +486,11 @@
           CODIGO_PRODUCTO = :dsKeyAsiento.codProducto;
         If Sqlcode = 0 AND wcomodin <>0;
           wcodprod=wcomodin;
-        //Select;
-        //  When  Not WExiste_Cod and
-        //    WMarca=1 and
-        //    WCodDiv='EUR'; // Valida Diners EUR
-        //    Wcodprod= 999;
-        //  When  Not WExiste_Cod and
-        //    WMarca=2 and
-        //    WCodDiv='EUR'; // Valida MC EUR
-        //    Wcodprod = 998;
-        //  When  Not WExiste_Cod and
-        //    WMarca=1 and
-        //    WCodDiv='GBP'; // Valida Diners GBP
-        //    Wcodprod = 995;
-        //  When  Not WExiste_Cod and
-        //    WMarca=2 and
-        //    WCodDiv='GBP'; // Valida MC GBP
-        //    Wcodprod = 994;
-        //  When  Not WExiste_Cod and
-        //    WMarca=1 and
-        //    WCodDiv='USD'; // Valida Diners USD
-        //    Wcodprod= 997;
-        //  When  Not WExiste_Cod and
-        //    WMarca=2 and
-        //    WCodDiv='USD'; // Valida MC USD
-        //    Wcodprod = 996;
-        //EndSl;
+
         endif; // Existe producto y comoodin <>0
       EndIf; //Existe por producto
     endif;//Producto 0
+
     Exec Sql
       SELECT
         PROCESO, DESCRIPCION_ASIENTO, TIPO_PROCEDENCIA, CUENTA_NAVISION,
@@ -561,8 +532,7 @@
       dsDatosAsientoParametrizables.dimensionLibre2 = '  ';
       dsDatosAsientoParametrizables.dimensionLibre3 = '  ';
     EndIf;
-    //return sqlStt = '00000';
-    //Sqlcode = 0;
+
       Actualiza_texto_concepto
       (dsDatosAsientoParametrizables.textoConcepto:dsKeyAsiento.codProducto);
 
@@ -708,71 +678,6 @@
     For I=1 to Inx;
       // Se verifica Producto
       WCodProd = Acumulador(I).Cod_prod;
-      // 901 para NACI05M Diners ADQ
-      // If WCodProd = 901;
-      //   WMarca = 1; // Diners ADQ
-      // Else;
-      //Exec SQL
-      //  Select Codigo_Marca, DIVISA_ISO
-      //  Into :WMarca, :WCodDiv
-      //  From PRODUCTOS_DCS
-      //  Where
-      //    CODIGO_PRODUCTO = :WCodProd;
-      //Endif;
-
-      //If Sqlcode < 0;
-      //  observacionSql = 'CONTABSRV_Genera_Contabilidad_Totales_Producto: ' +
-      //                   'Error en Select PRODUCTOS_DCS';
-      //  Clear Nivel_Alerta;
-      //  Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-      //EndIf;
-      //If SQLCODE<>0;
-      //    Iter;
-      //EndIf;
-
-      //Exec SQL
-      //  Select '1'
-      //  Into :WExiste_Cod
-      //  From ASIENTOS_CUENTAS_POR_PRODUCTO
-      //  Where
-      //    ID_ASIENTO = :ID_Contab
-      //    AND CODIGO_PRODUCTO = :WCodProd
-      //  Limit 1;
-
-      //If Sqlcode < 0;
-      //  observacionSql = 'CONTABSRV_Genera_Contabilidad_Totales_Producto: ' +
-      //                   'Error en Select ASIENTOS_CUENTAS_POR_PRODUCTO';
-      //  Clear Nivel_Alerta;
-      //  Nivel_Alerta = Diagnostico(PROCEDURENAME:observacionSql);
-       // Iter;
-      //EndIf;
-
-      //Select;
-      //  When  Not WExiste_Cod and
-      //        WMarca=1 and
-      //        WCodDiv='EUR'; // Valida Diners EUR
-      //    WCodprod = 999;
-      //  When  Not WExiste_Cod and
-      //        WMarca=2 and
-      //        WCodDiv='EUR'; // Valida MC EUR
-      //    WCodprod = 998;
-      //  When  Not WExiste_Cod and
-      //        WMarca=1 and
-      //        WCodDiv='GBP'; // Valida Diners GBP
-      //    WCodprod = 995;
-      //  When  Not WExiste_Cod and
-      //        WMarca=2 and
-      //        WCodDiv='GBP'; // Valida MC GBP
-      //    WCodprod = 994;
-      //  When  Not WExiste_Cod and
-      //        WMarca=1 and
-      //        WCodDiv='USD'; // Valida Diners USD
-      //    WCodprod = 997;
-      //  When  Not WExiste_Cod and
-      //        WMarca=2 and
-      //        WCodDiv='USD'; // Valida MC USD
-      //    WCodprod = 996;
-      //EndSl;
 
       if not CONTABSRV_Guardar_Asiento_Total_producto(
              WCodprod
@@ -977,8 +882,8 @@
           'FROMLIB('                            +
           %Trim(WFile_Lib) + ') '               +
           'OBJTYPE(*FILE) '                     +
-          'TOLIB(' + %trim(P_ENV)               +
-          'DATA(*NO)';
+          'TOLIB(' + %trim(P_ENV) + ') '        +
+          ' DATA(*NO)';
         Endif;
       EndIf;
 

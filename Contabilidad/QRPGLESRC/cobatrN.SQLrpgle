@@ -1,4 +1,4 @@
-     H DECEDIT('0,') DATEDIT(*DMY.) 
+     H DECEDIT('0,') DATEDIT(*DMY.) DFTACTGRP(*NO)
      H BNDDIR('CONTBNDDIR':'UTILITIES/UTILITIES')
       *****************************************************************
       *             --CONCILIACION CTAS. DE VIAJES--                 **
@@ -8,14 +8,17 @@
       *****************************************************************
      FCOBATRLG  IF   E           K DISK
      FFAGENCON  IF   E           K DISK
-     FOPAGECOL1 IF   E           K DISK                                         OPAGECO
-     FOPAGECOLG7IF   E           K DISK    RENAME(OPAGCOW:OPAGCOB)              OPAGECO_B
-     FOPAGECOLH1IF   E           K DISK    RENAME(OPAGCOW:OPAGCHI)              OPAGECOMIH
+     FOPAGECOL1 IF   E           K DISK    ExtFile('FICHEROS/OPAGECOL1')        OPAGECO
+     FOPAGECOLG7IF   E           K DISK    ExtFile('FICHEROS/OPAGECOLG7')       OPAGECO_B
+     F                                     RENAME(OPAGCOW:OPAGCOB)
+     FOPAGECOLH1IF   E           K DISK    ExtFile('FICHEROS/OPAGECOLH1')       OPAGECOMIH
+     F                                     RENAME(OPAGCOW:OPAGCHI)
      FMSOCIO    IF   F  731     8AIDISK    KEYLOC(3)
+     F                                     ExtFile('FICHEROS/MSOCIO')
      FDESCRC17  O    E             DISK
      FPAC17     O    E             DISK
      FOPAGECO17 O    E             DISK    RENAME(OPAGCOW:OPAGC17)
-     FASICOC17  O    F  101        DISK
+      *FASICOC17  O    F  101        DISK
      FCABE10    O    F   78        DISK
      FDETE10    O    F  157        DISK
      D*----------------------------------------------------------------
@@ -28,41 +31,42 @@
      D*--------------------------------
      D* REGISTRO DEL FICHERO -ASIFILE-
      D*--------------------------------
-     D DSCONT          DS
-     D  CAPUNT                 1      6
-     D  APUN5                  2      6
-     D  CCTAMA                 7     11
-     D  CCTAFI                12     13
-     D  CCTAAU                14     18
-     D  CCODIG                19     21  0
-     D  CPROGR                22     27    INZ('COBATR')
-     D  CFECON                28     35  0
-     D  CDEHA                 36     36
-     D  CREFOP                37     42
-     D  CFEVTO                43     50  0 INZ(00000000)
-     D  CCONCE                51     80
-     D  CIMPOR                81     94  3
-     D  CMONED                95     95    INZ('1')
-     D  CPROVI                96    101
+     D* DSCONT          DS
+     D*  CAPUNT                 1      6
+     D*  APUN5                  2      6
+     D*  CCTAMA                 7     11
+     D*  CCTAFI                12     13
+     D*  CCTAAU                14     18
+     D*  CCODIG                19     21  0
+     D*  CPROGR                22     27    INZ('COBATR')
+     D*  CFECON                28     35  0
+     D*  CDEHA                 36     36
+     D*  CREFOP                37     42
+     D*  CFEVTO                43     50  0 INZ(00000000)
+     D*  CCONCE                51     80
+     D*  CIMPOR                81     94  3
+     D*  CMONED                95     95    INZ('1')
+     D*  CPROVI                96    101
 
-      /COPY EXPLOTA/QRPGLESRC,DSTIMSYS
-      /COPY EXPLOTA/QRPGLESRC,DSAEVIDE
+        /COPY EXPLOTA/QRPGLESRC,DSTIMSYS
+        /COPY EXPLOTA/QRPGLESRC,DSAEVIDE
 
-      /Define Funciones_CONTABSRV
-      /Define PGM_ASBUNU
-      /Define Estructuras_Asientos_Evidencias
-      /define Common_Variables
-      /Include Explota/QRPGLESRC,CONTABSRVH
+        /Define Funciones_CONTABSRV
+        /Define PGM_ASBUNU
+        /Define Estructuras_Asientos_Evidencias
+        /define Common_Variables
+        /Include Explota/QRPGLESRC,CONTABSRVH
 
-      /copy UTILITIES/QRPGLESRC,PSDSCP      // psds
-      /Include UTILITIES/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
+        /copy UTILITIES/QRPGLESRC,PSDSCP      // psds
+        /Include UTILITIES/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
 
-      Dcl-S fechaSistema Timestamp;
-      Dcl-s WApunte      Char(6);
-      Dcl-s fecproces    Zoned(8);
-      Dcl-s WCODPROD     Char(3); 
-      Dcl-s WCODCONTAB   Packed(5:0) Inz(42); // 
-      Dcl-s WInd         Zoned(3);  
+        Dcl-S fechaSistema Timestamp;
+        Dcl-s WApunte      Char(6);
+        Dcl-s fecproces    Zoned(8);
+        Dcl-s WCODPROD     Zoned(3);
+        Dcl-s WCODCONTAB   Zoned(5:0) Inz(43); //
+        Dcl-s WInd         Zoned(3);
+        Dcl-s WNomAsi      Char(10) Inz('ASICOBATR');  
 
      D                 DS
      D  PREEXP                 1     20
@@ -93,15 +97,18 @@
      C*-------------
      C     *ENTRY        PLIST                                                                 COMPS
      C                   PARM                    NUMALF            3            -Nº.TRABAJO    COMPS
-     C                   PARM                    PNOMASI          10            ASIFILE
-     
+     C                   PARM                    NUMApun           6            -Nº.APUNTE
+
         // inicializamos Array / Matriz
         Reset Acumulador;
 
         fechaSistema = %timestamp();
         WApunte = CONTABSRV_Asignar_Numero_Apunte(fechaSistema);
-        fechaSistema = fechaSistema -  %days(1);
-        fecproces = %dec(%char(%date(fechaSistema):*eur0):8:0);
+        AAPUNT = WApunte;  
+        NUMApun = WApunte;
+        //fechaSistema = fechaSistema -  %days(1);
+        //fecproces = %dec(%char(%date(fechaSistema):*eur0):8:0);
+        fecproces = %dec(%char(%date():*eur0):8:0);
 
      C*----------------------------------------------
      C* DESCRFAC (Nº.TRABAJO) BUSCO ULTIMO ASIGNADO
@@ -164,8 +171,8 @@
         Exec Sql
           SELECT SCODPR
           INTO :WCODPROD
-          FROM T_MSOCIO
-          WHERE NUREAL = :GTADES;  
+          FROM Ficheros.T_MSOCIO
+          WHERE NUREAL = :GTADES;
 
      C                   ENDIF
      C*------------------------------------
@@ -180,13 +187,13 @@
      C  N33              ADD       GIMPOR        TOTRNC           10 0          -TOT.TRAS.NO CO
      C   33              ADD       GIMPOR        TOTRSC           10 0          -TOT.TRAS.SI CO
 
-        // Aqui lo logica para cargar el arreglo 
+        // Aqui lo logica para cargar el arreglo
           Acumula_importe(GIMPOR/100:WCODPROD);
         //-------------------------------
-    
+
      C                   ENDDO
-     C                   
-     C                   
+     C
+     C
      C*----------------------------------------------------------------
      C*--             F I N A L    P R O G R A M A                   --
      C*----------------------------------------------------------------
@@ -464,15 +471,15 @@
       /End-Free
      C                   Z-ADD     99            LIN               3 0
      C                   MOVEL     HORSYS        APROVI
-     C                   MOVEL     HORSYS        CPROVI
+     C*                   MOVEL     HORSYS        CPROVI
      C*----------------------------------
      C*-- EVIDENCIA DEPART. CONTABILIDAD
      C*----------------------------------
-     C                   CALL      'ASBUNU'                                     -Nº. APUNTE
-     C                   PARM                    AÑOSYS_ALF2                    -Nº. APUNTE
-     C                   PARM                    MESSYS_ALF                     -Nº. APUNTE
-     C                   PARM                    CAPUNT                         -Nº. APUNTE
-     C                   MOVEL     CAPUNT        AAPUNT
+     C*                   CALL      'ASBUNU'                                     -Nº. APUNTE
+     C*                   PARM                    AÑOSYS_ALF2                    -Nº. APUNTE
+     C*                   PARM                    MESSYS_ALF                     -Nº. APUNTE
+     C*                   PARM                    CAPUNT                         -Nº. APUNTE
+     C*                   MOVEL     CAPUNT        AAPUNT
 
      C                   ENDSR
 
@@ -490,7 +497,7 @@
      ODETE10    E            CAB
      O                                            6 'COBATR'
      O                                           21 'Nº.APUNTE: '
-     O                       APUN5               26
+     O                       WApunte             26
      O                                           60 '** CONCILIACION CUENTAS '
      O                                           72 'DE VIAJES **'
      O                                          128 'PAGINA'
@@ -582,50 +589,50 @@
      O*----------------------------------------------------------------
      O*--               A  S  I  E  N  T  O  S                       --
      O*----------------------------------------------------------------
-     OASICOC17  E            APUNTE
-     O                       DSCONT             101
+      *OASICOC17  E            APUNTE
+      *O                       DSCONT             101
      O*----------------------------------------------------------------
 
-      //-----------------------------------------------------------------
-      // Acumula_importe
-      //-----------------------------------------------------------------
-      dcl-proc Acumula_importe;
-        dcl-pi *n Ind;
-          P_Impor   Packed(14:3) const;
-          p_Product Zoned(3);
-        end-pi;
+        //-----------------------------------------------------------------
+        // Acumula_importe
+        //-----------------------------------------------------------------
+        dcl-proc Acumula_importe;
+          dcl-pi *n Ind;
+            P_Impor   Packed(14:3) const;
+            p_Product Zoned(3);
+          end-pi;
 
-        Dcl-s WIndx    Zoned(3);
+          Dcl-s WIndx    Zoned(3);
 
-        WIndx = %lookup(p_Product: Acumulador(*).Cod_prod:1);
-        if WIndx > 0;
-            Acumulador(WIndx).Total += P_Impor;
-        else;
-            WInd += 1;
-            Acumulador(WInd).Cod_prod = p_Product;
-            Acumulador(WInd).Total    = P_Impor;
-        endif;
+          WIndx = %lookup(p_Product: Acumulador(*).Cod_prod:1);
+          if WIndx > 0;
+              Acumulador(WIndx).Total += P_Impor;
+          else;
+              WInd += 1;
+              Acumulador(WInd).Cod_prod = p_Product;
+              Acumulador(WInd).Total    = P_Impor;
+          endif;
 
-        Return *On;
+          Return *On;
 
-      end-proc;
-      //-----------------------------------------------------------------
-      // Acumula_importe
-      //-----------------------------------------------------------------
-      dcl-proc Genera_Contabilidad;
-        dcl-pi *n;
-        end-pi;
+        end-proc;
+        //-----------------------------------------------------------------
+        // Genera_Contabilidad
+        //-----------------------------------------------------------------
+        dcl-proc Genera_Contabilidad;
+          dcl-pi *n;
+          end-pi;
 
-        CONTABSRV_Genera_Contabilidad_Totales_Producto(
-          Acumulador      // Arreglo de Totales por Producto
-          :WInd           // Indice de registros Grabados en el Arreglo
-          :WCodContab     // Indice Contable: 5 Para este proceso
-          :WApunte        // NUmero de Apunte
-          :fecproces      // Fecha del asiento DDMMAAAA
-          :PNOMASI        // Nombre Fichero Parcial ASIFILEn
-          );
+          CONTABSRV_Genera_Contabilidad_Totales_Producto(
+            Acumulador      // Arreglo de Totales por Producto
+            :WInd           // Indice de registros Grabados en el Arreglo
+            :WCodContab     // Indice Contable: 5 Para este proceso
+            :WApunte        // NUmero de Apunte
+            :fecproces      // Fecha del asiento DDMMAAAA
+            :WNomAsi        // Nombre Fichero Parcial ASIFILEn
+            );
 
-      end-proc;         
+        end-proc;
 **
 BILLETE RENFE NUM. AUT.
 PAQUETE AGEN. NUM. AUT.

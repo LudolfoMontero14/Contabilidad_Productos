@@ -289,7 +289,7 @@
     Else;
 
     StrCmd =
-      'STRJRNPF FILE(QTEMP/BINREGPRO) JRN(FICHEROS/JOURNAL)' ;
+      'STRJRNPF FILE(QTEMP/BINREGPRO) JRN(FICHEROS/QSQJRN)' ;
 
     Execute(StrCmd:%Len(%trim(StrCmd)));
 

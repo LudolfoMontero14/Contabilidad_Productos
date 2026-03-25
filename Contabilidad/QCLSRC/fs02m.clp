@@ -17,6 +17,7 @@
              DCL        VAR(&REST1)  TYPE(*CHAR) LEN(10)
              DCL        VAR(&NUMREG) TYPE(*DEC)  LEN(10 0)
              DCL        VAR(&NOMPARA) TYPE(*CHAR) LEN(10)
+             dcl        &NUMAPU   *char   6
 /*-------------------------------------------------------------------*/
 /*--         RECUPERAR VALORES Y CEBAR VARIABLES                   --*/
 /*-------------------------------------------------------------------*/
@@ -203,10 +204,10 @@
      /*    Nueva version del FSPAFAN (Actualizacion)       LM  */
      /*    PARALELO - Contabilidad por Producto                */
      /*--------------------------------------------------------*/
-             CALL PGM(EXPLOTA/CONTAB000) +
+             /*CALL PGM(EXPLOTA/CONTAB000) +
                   PARM(('FS02M') +
                        ('FSPAFAN_P') +
-                       (&NOMPARA))
+                       (&NOMPARA))*/
 
      /*--------------------------------------------------------*/
 
@@ -217,9 +218,6 @@
                         PGM-FSPAFAN')
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(BS       FICHEROS +
                         BS       LIBSEG30D C ' ' ' ' &TEX FS02)
-
-             CALL       PGM(EXPLOTA/CONCOPCL) PARM(BS       FICHEROS +
-                        BS       LJMONTERO C ' ' ' ' &TEX FS02)
 
              CRTPF      FILE(FICHEROS/ASIPAFAN) +
                         SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFILEN) +
@@ -245,11 +243,19 @@
              DLTOVR     FILE(*ALL)
              OVRDBF     FILE(ASIFILEN) TOFILE(FICHEROS/ASIPAFAN) +
                         OVRSCOPE(*JOB)
-             OVRDBF     FILE(BS)      TOFILE(FICHEROS/BS)
-             CALL       PGM(EXPLOTA/FSPAFAN)
-             DLTOVR     FILE(ASIFILEN) LVL(*JOB)
-             DLTOVR     FILE(BS)
-             DLTOVR     FILE(*ALL)
+             /*OVRDBF     FILE(BS)      TOFILE(FICHEROS/BS) */
+
+             /*CALL       PGM(EXPLOTA/FSPAFAN*/
+             CALL       PGM(PARALELOC/FSPAFAN) +
+                        PARM('ASIPAFAN'        +
+                             'CABEPAFA'        +
+                             'DETEPAFA'        +
+                             &NUMAPU)
+
+
+             /*DLTOVR     FILE(ASIFILEN) LVL(*JOB)*/
+             /*DLTOVR     FILE(BS)*/
+             /*DLTOVR     FILE(*ALL)*/
 
              RTVMBRD    FILE(FICHEROS/ASIPAFAN) NBRCURRCD(&NUMREG)
              IF         COND(&NUMREG > 0) THEN(DO)
@@ -281,13 +287,13 @@
     /*------------------------------------------------------*/
     /* Copia de Registros a Historicos                      */
     /*------------------------------------------------------*/
-             CALL       PGM(CONTAB102) +
+             /*CALL       PGM(CONTAB102) +
                         PARM('ASIPAFAN'       +
                             'CABEPAFA'        +
                             'DETEPAFA'        +
                             &NOMPARA          +
                             'N'               +
-                            'P')
+                            'P')*/
 
              ENDDO
          /*--------------------------------------------------------*/

@@ -1,0 +1,58 @@
+  PGM (&NomProc &NOMENV)
+    dcl  &NomProc  *char  10
+    dcl  &NOMENV   *char  10
+    dcl  &NUMAPU   *char   6
+
+
+    /*------------------------------------------------------*/
+    /* Creacion de Logicos Requeridos                       */
+    /*------------------------------------------------------*/
+    CRTLF     FILE(&NOMENV/COBATRLG) +
+              SRCFILE(FICHEROS/QDDSSRC) +
+              TEXT('conciliacion, logico -cobatrok- +
+              traspasos bolsas') OPTION(*NOLIST *NOSRC) +
+              LVLCHK(*NO) AUT(*ALL)
+
+    CRTLF     FILE(&NOMENV/PALG5) +
+              SRCFILE(FICHEROS/QDDSSRC) +
+              TEXT('por num.trabajo para pgm-chknut') +
+              OPTION(*NOLIST *NOSRC) LVLCHK(*NO) AUT(*ALL)
+
+    OVRDBF    FILE(DESCRFAC) + 
+              TOFILE(FICHEROS/DESCRFAC) + 
+              OVRSCOPE(*JOB)
+
+     /*------------------------------------------------------*/
+    /*------------------------------------------------------*/
+    /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */
+    /*------------------------------------------------------*/
+    CALL       PGM(PARALELOC/COBATRN) +
+               PARM('123'       +
+               &NUMAPU)
+
+    /*------------------------------------------------------*/
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+    CALL       PGM(CONTAB102)        +
+               PARM('ASICOBATR'      +
+                    'CABE10'       +
+                    'DETE10'      +
+                    &NOMENV          +
+                    'N'              +
+                    'T')
+
+    /*-------------------------------------------------------*/
+    /* Actualiza Auditoria Paralelo                          */
+    /*-------------------------------------------------------*/
+    Call CONTAB101 Parm(&NomProc     +
+                    'COBATRN'        +
+                    'ASICOBATR'      +
+                    'CABE10'       +
+                    'DETE10'      +
+                    &NUMAPU          +
+                    &NOMENV)
+    /*--------------------------------*/
+    /* Fin del CEREFSN New            */
+    /*--------------------------------*/
+    DSPJOBLOG  OUTPUT(*OUTFILE) OUTFILE(LJMONTERO/COBATRNJOB)
+  endpgm

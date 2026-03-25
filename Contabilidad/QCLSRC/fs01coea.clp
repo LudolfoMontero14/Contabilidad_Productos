@@ -64,6 +64,7 @@
              DCL        VAR(&PRIORID) TYPE(*DEC) LEN(1 0) VALUE(9)
              DCL        VAR(&DESCRIP) TYPE(*CHAR) LEN(80)
              DCL        VAR(&NOMPARA) TYPE(*CHAR) LEN(10)
+             dcl        &NUMAPU   *char   6
 
              CHGVAR     VAR(&RESPU) VALUE('NO') /* NUNCA ULTIMA */
 /*-------------------------------------------------------------------*/
@@ -976,6 +977,13 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
              MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
                           FILE(FICHEROS/RECIBOS))
 
+             CRTPF      FILE(FICHEROS/RECIBOSMC) +
+                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(RECIBOS) +
+                          OPTION(*NOLIST *NOSRC) SIZE(*NOMAX) +
+                          LVLCHK(*NO) AUT(*ALL)
+             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+                          FILE(FICHEROS/RECIBOSMC))
+
              CRTPF      FILE(FICHEROS/ASIBALAN) +
                           SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFILEN) +
                           TEXT('ASIENTO REGULARIZACION MONEDA') +
@@ -1403,10 +1411,10 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
      /*    Nueva version del CEREFS (CEREFSN)             LM   */
      /*    PARALELO - Contabilidad por Producto                */
      /*--------------------------------------------------------*/
-             CALL PGM(EXPLOTA/CONTAB000) +
+             /*CALL PGM(EXPLOTA/CONTAB000) +
                   PARM(('FS01COEA') +
                        ('CEREFSN_P') +
-                       (&NOMPARA))
+                       (&NOMPARA))*/
 
      /*--------------------------------------------------------*/
              CHGVAR     VAR(&TEX) VALUE('FS01CO, ANTES DE PGM-CEREFS')
@@ -1425,12 +1433,19 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
                           -RECIBOS- PARA RPG.CEREFS') +
                           OPTION(*NOLIST *NOSRC) LVLCHK(*NO) AUT(*ALL)
 
-             CRTPF      FILE(FICHEROS/ASIRECFS) +
+             /*CRTPF      FILE(FICHEROS/ASIRECFS) +
+                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFIVA) +
+                          OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
+                          LVLCHK(*NO) AUT(*ALL)*/
+             /*MONMSG     MSGID(CPF0000) CMPDTA(*NONE) EXEC(CLRPFM +
+                          FILE(FICHEROS/ASIRECFS))*/
+
+             CRTPF      FILE(FICHEROS/ASICEREFSN) +
                           SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFIVA) +
                           OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
                           LVLCHK(*NO) AUT(*ALL)
              MONMSG     MSGID(CPF0000) CMPDTA(*NONE) EXEC(CLRPFM +
-                          FILE(FICHEROS/ASIRECFS))
+                          FILE(FICHEROS/ASICEREFSN))
 
              CRTPF      FILE(FICHEROS/DETECERE) +
                           SRCFILE(FICHEROS/QDDSSRC) SRCMBR(DETEVI) +
@@ -1446,7 +1461,7 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
              MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
                           FILE(FICHEROS/CABECERE))
 
-             OVRDBF     FILE(ASIFIVA) TOFILE(FICHEROS/ASIRECFS)
+             OVRDBF     FILE(ASIFIVA) TOFILE(FICHEROS/ASICEREFSN)
 /*---*/
              CALL       PGM(EXPLOTA/FCRECI) /* Ver Vto. Recibos */
 
@@ -1459,8 +1474,12 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
                           RECIBOS LIBSEG30D C ' ' ' ' &TEX FS01CO)
 /*------------------------------------------------------------------*/
 
-             CALL       PGM(EXPLOTA/CEREFS) /* Acumular Recibos */
-
+             /*CALL       PGM(EXPLOTA/CEREFS)*/ /* Acumular Recibos */
+             CALL       PGM(PARALELOC/CEREFSN) +
+                        PARM('ASICEREFSN'      +
+                             'CABECERE'        +
+                             'DETECERE'        +
+                             &NUMAPU)
 /*---*/
              CALL       PGM(EXPLOTA/TRACE) PARM('cuadre BORECI  CON +
                           TOTALES' ' ' FS01CO)
@@ -1471,7 +1490,7 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
              D1         LABEL(RECIBL2) LIB(FICHEROS)
 
              CHGJOB     DATE(&FECHA)
-             RTVMBRD FILE(FICHEROS/ASIRECFS) NBRCURRCD(&NUMREG)
+             RTVMBRD FILE(FICHEROS/ASICEREFSN) NBRCURRCD(&NUMREG)
              IF COND(&NUMREG > 0) THEN(DO)
 
              /* Actualiza Evidencia */
@@ -1484,8 +1503,8 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
                           FMTOPT(*NOCHK)
 
              /* Actualiza Apunte Contable */
-             OVRDBF FILE(ASIFILE) TOFILE(FICHEROS/ASIRECFS)
-             CALL PGM(EXPLOTA/ACASBO) PARM('002')
+             OVRDBF FILE(ASIFILE) TOFILE(FICHEROS/ASICEREFSN)
+             CALL PGM(EXPLOTA/ACASBON) PARM('002')
              DLTOVR FILE(ASIFILE)
 
              /* Respaldo de Parciales Apuntes Contables Evidencias*/
@@ -1498,21 +1517,21 @@ RE16:        RTVMBRD    FILE(FICHEROS/FAPA) NBRCURRCD(&NUMREG)
 
              CHGVAR     VAR(&TEX) VALUE('FS01COM - DI APUNTES +
                             CONT. DESPUES DEL CEREFS')
-             CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASIRECFS FICHEROS +
-                          ASIRECFS LIBSEG1D C ' ' ' ' &TEX FS01CO)
+             CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASICEREFSN FICHEROS +
+                          ASICEREFSN LIBSEG1D C ' ' ' ' &TEX FS01CO)
 
     /*------------------------------------------------------*/
     /* Copia de Registros a Historicos                      */
     /*------------------------------------------------------*/
-             CALL       PGM(CONTAB102) +
+             /*CALL       PGM(CONTAB102) +
                         PARM('ASIRECFS'       +
                             'CABECERE'        +
                             'DETECERE'        +
                             &NOMPARA          +
                             'V'               +
-                            'P')
+                            'P')*/
 
-             Clrpfm  Ficheros/ASIRECFS
+             Clrpfm  Ficheros/ASICEREFSN
              ENDDO
 
              CALL       PGM(EXPLOTA/TRACE) PARM('+1' ' ' FS01CO) /*44*/

@@ -2,7 +2,7 @@
     dcl  &NomProc  *char  10
     dcl  &NOMENV   *char  10
     dcl  &NUMAPU   *char   6
-call Noexiste
+
     /*------------------------------------------------------*/
     /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */
     /*------------------------------------------------------*/
