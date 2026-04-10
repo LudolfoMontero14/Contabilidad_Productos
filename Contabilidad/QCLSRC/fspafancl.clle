@@ -1,0 +1,83 @@
+  PGM (&NomProc)
+    dcl  &NomProc  *char  10
+    dcl  &NUMAPU   *char   6
+    DCL  &TEX      *CHAR  50
+    DCL  &NUMREG   *DEC   10 0
+
+    /*---------------------------------------------------------*/
+    /* Respados previos                                        */
+    /*---------------------------------------------------------*/
+    CHGVAR     VAR(&TEX) VALUE('FS01COM, ANTES DEL +
+               PGM-FSPAFANCL')
+    CALL       PGM(EXPLOTA/CONCOPCL) PARM(BS       FICHEROS +
+               BS       LIBSEG30D C ' ' ' ' &TEX &NomProc)
+
+    /*---------------------------------------------------------*/
+    /* Creación de Ficheros Parciales:ASIFILEN, DETEVI, CABEVI */
+    /*---------------------------------------------------------*/
+    CRTPF      FILE(FICHEROS/ASIPAFAN) +
+               SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFILEN) +
+               TEXT('Asientos FSPAFAN') +
+               OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
+               LVLCHK(*NO) AUT(*ALL)
+    MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+               FILE(FICHEROS/ASIPAFAN))
+
+    CRTPF      FILE(FICHEROS/DETEPAFA) +
+               SRCFILE(FICHEROS/QDDSSRC) SRCMBR(DETEVI) +
+               OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
+               LVLCHK(*NO) AUT(*ALL)
+    MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+               FILE(FICHEROS/DETEPAFA))
+
+    CRTPF      FILE(FICHEROS/CABEPAFA) +
+               SRCFILE(FICHEROS/QDDSSRC) SRCMBR(CABEVI) +
+               OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+               FILE(FICHEROS/CABEPAFA))
+
+    /*------------------------------------------------------*/
+    /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */
+    /*------------------------------------------------------*/
+    CALL       PGM(PARALELOC/FSPAFAN) +
+               PARM('ASIPAFAN'        +
+                    'CABEPAFA'        +
+                    'DETEPAFA'        +
+                    &NUMAPU)
+
+    /*-----------------------------------------------------------*/
+    /* Verificación de Generación contable y actualización final */
+    /*-----------------------------------------------------------*/
+    RTVMBRD    FILE(FICHEROS/ASIPAFAN) NBRCURRCD(&NUMREG)
+    IF         COND(&NUMREG > 0) THEN(DO)
+
+      CPYF       FROMFILE(FICHEROS/DETEPAFA) +
+                 TOFILE(FICHEROS/DETEVI) MBROPT(*ADD) +
+                 FMTOPT(*NOCHK)
+      MONMSG     MSGID(CPF0000)
+
+      CPYF       FROMFILE(FICHEROS/CABEPAFA) +
+                 TOFILE(FICHEROS/CABEVI) MBROPT(*ADD) +
+                 FMTOPT(*NOCHK)
+      MONMSG     MSGID(CPF0000)
+
+      OVRDBF     FILE(ASIFILE) TOFILE(FICHEROS/ASIPAFAN)
+      CALL       PGM(EXPLOTA/ACASBON) PARM('002')
+      DLTOVR     FILE(ASIFILE)
+
+      CHGVAR     VAR(&TEX) VALUE('FS01COM, DESPUES DEL +
+                 PGM-FSPAFANCL')
+
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(DETEPAFA FICHEROS +
+                 DETEPAFA LIBSEG1D C ' ' ' ' &TEX &NomProc)
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(CABEPAFA FICHEROS +
+                 CABEPAFA LIBSEG1D C ' ' ' ' &TEX &NomProc)
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASIPAFAN FICHEROS +
+                 ASIPAFAN LIBSEG1D C ' ' ' ' &TEX &NomProc)
+
+    ENDDO
+    /*--------------------------------*/
+    /* Fin del FSPAFANCL New            */
+    /*--------------------------------*/
+
+  endpgm

@@ -859,7 +859,7 @@
       DS_RECAP.Fecha_Recap + ' ' +
       %trim(%Editc(%ABS(DS_RECAP.IMP_ORIG_NETO):'J'));
     dsAsifilen.cctana = %editc(DS_RECAP.PAIS:'X');
-    dsAsifilen.crefde = %editc(DS_RECAP.RECAP:'X');
+    dsAsifilen.crefop = %SubSt(%editc(DS_RECAP.RECAP:'X'): 2: 3);
 
     if not CONTABSRV_Grabar_Asiento(dsAsifilen
           :sqlError

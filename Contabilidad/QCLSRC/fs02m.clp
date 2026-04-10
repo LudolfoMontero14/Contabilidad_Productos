@@ -196,107 +196,16 @@
 /*-------------------------------------------------------------------*/
 /*--  RPG. FSPAFA  -ASIENTO Y CUADRE PA Y FA DE SA LIDA EN QBATCH-  --*/
 /*-------------------------------------------------------------------*/
- RE4:        CALL       PGM(EXPLOTA/TRACE) PARM('            +
-                          Programa FSPAFA en +
-                          ejecucion                    ' ' ' FS02)
+ RE4:        CALL       PGM(EXPLOTA/TRACE) +
+                    PARM('Programa FSPAFANCL en ejecucion ' ' ' FS02)
 
-     /*--------------------------------------------------------*/
-     /*    Nueva version del FSPAFAN (Actualizacion)       LM  */
-     /*    PARALELO - Contabilidad por Producto                */
-     /*--------------------------------------------------------*/
-             /*CALL PGM(EXPLOTA/CONTAB000) +
-                  PARM(('FS02M') +
-                       ('FSPAFAN_P') +
-                       (&NOMPARA))*/
+/*------------------------------------------------------------------*/
+/* Proceso del FSPAFAN - Asiento traspaso pa a fa Diners/MC         */
+/*------------------------------------------------------------------*/
+             CALL       PGM(EXPLOTA/FSPAFANCL)   +
+                        PARM('FS02')
+/*------------------------------------------------------------------*/
 
-     /*--------------------------------------------------------*/
-
-     /*--------------------------------------------------------*/
-     /*    Nueva version del FSPAFA                            */
-     /*--------------------------------------------------------*/
-             CHGVAR     VAR(&TEX) VALUE('FS02, ANTES DEL +
-                        PGM-FSPAFAN')
-             CALL       PGM(EXPLOTA/CONCOPCL) PARM(BS       FICHEROS +
-                        BS       LIBSEG30D C ' ' ' ' &TEX FS02)
-
-             CRTPF      FILE(FICHEROS/ASIPAFAN) +
-                        SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFILEN) +
-                        TEXT('Asientos FSPAFAN') +
-                        OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
-                        LVLCHK(*NO) AUT(*ALL)
-             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
-                        FILE(FICHEROS/ASIPAFAN))
-
-              CRTPF      FILE(FICHEROS/DETEPAFA) +
-                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(DETEVI) +
-                          OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
-                          LVLCHK(*NO) AUT(*ALL)
-              MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
-                          FILE(FICHEROS/DETEPAFA))
-
-              CRTPF      FILE(FICHEROS/CABEPAFA) +
-                        SRCFILE(FICHEROS/QDDSSRC) SRCMBR(CABEVI) +
-                        OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
-              MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
-                        FILE(FICHEROS/CABEPAFA))
-
-             DLTOVR     FILE(*ALL)
-             OVRDBF     FILE(ASIFILEN) TOFILE(FICHEROS/ASIPAFAN) +
-                        OVRSCOPE(*JOB)
-             /*OVRDBF     FILE(BS)      TOFILE(FICHEROS/BS) */
-
-             /*CALL       PGM(EXPLOTA/FSPAFAN*/
-             CALL       PGM(PARALELOC/FSPAFAN) +
-                        PARM('ASIPAFAN'        +
-                             'CABEPAFA'        +
-                             'DETEPAFA'        +
-                             &NUMAPU)
-
-
-             /*DLTOVR     FILE(ASIFILEN) LVL(*JOB)*/
-             /*DLTOVR     FILE(BS)*/
-             /*DLTOVR     FILE(*ALL)*/
-
-             RTVMBRD    FILE(FICHEROS/ASIPAFAN) NBRCURRCD(&NUMREG)
-             IF         COND(&NUMREG > 0) THEN(DO)
-
-              CPYF       FROMFILE(FICHEROS/DETEPAFA) +
-                          TOFILE(FICHEROS/DETEVI) MBROPT(*ADD) +
-                          FMTOPT(*NOCHK)
-              MONMSG     MSGID(CPF0000)
-              CPYF       FROMFILE(FICHEROS/CABEPAFA) +
-                         TOFILE(FICHEROS/CABEVI) MBROPT(*ADD) +
-                         FMTOPT(*NOCHK)
-              MONMSG     MSGID(CPF0000)
-
-              OVRDBF     FILE(ASIFILE) TOFILE(FICHEROS/ASIPAFAN)
-              CALL       PGM(EXPLOTA/ACASBON) PARM('002')
-              DLTOVR     FILE(ASIFILE)
-
-              CHGJOB     DATE(&FECHA)
-
-              CHGVAR     VAR(&TEX) VALUE('FS02, DESPUES DEL +
-                        PGM-FSPAFAN')
-              CALL       PGM(EXPLOTA/CONCOPCL) PARM(DETEPAFA FICHEROS +
-                        DETEPAFA LIBSEG30D C ' ' ' ' &TEX FS02)
-              CALL       PGM(EXPLOTA/CONCOPCL) PARM(CABEPAFA FICHEROS +
-                        CABEPAFA LIBSEG30D C ' ' ' ' &TEX FS02)
-              CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASIPAFAN FICHEROS +
-                        ASIPAFAN LIBSEG30D C ' ' ' ' &TEX FS02)
-
-    /*------------------------------------------------------*/
-    /* Copia de Registros a Historicos                      */
-    /*------------------------------------------------------*/
-             /*CALL       PGM(CONTAB102) +
-                        PARM('ASIPAFAN'       +
-                            'CABEPAFA'        +
-                            'DETEPAFA'        +
-                            &NOMPARA          +
-                            'N'               +
-                            'P')*/
-
-             ENDDO
-         /*--------------------------------------------------------*/
              RTVMBRD    FILE(FICHEROS/BSSALTA) NBRCURRCD(&NUMREG)
              IF         COND(&NUMREG = 0) THEN(GOTO CMDLBL(NOSALBS))
 

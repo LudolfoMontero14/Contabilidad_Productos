@@ -1,0 +1,90 @@
+  PGM (&NomProc)
+    dcl  &NomProc  *char  10
+    dcl  &NUMAPU   *char   6
+    DCL  &TEX      *CHAR  50
+    DCL  &NUMREG   *DEC   10 0
+
+    CALL NOEXISTE
+    /*---------------------------------------------------------*/
+    /* Creación de Ficheros Parciales:ASIFILEN, DETEVI, CABEVI */
+    /*---------------------------------------------------------*/
+    CRTPF      FILE(FICHEROS/ASICEREFSN) +
+               SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFILEN) +
+               OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
+               LVLCHK(*NO) AUT(*ALL)
+    MONMSG     MSGID(CPF0000) CMPDTA(*NONE) EXEC(CLRPFM +
+               FILE(FICHEROS/ASICEREFSN))
+
+    CRTPF      FILE(FICHEROS/DETECERE) +
+               SRCFILE(FICHEROS/QDDSSRC) SRCMBR(DETEVI) +
+               TEXT('Evidencias Contables CEREFS - Recibos') +
+               OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+                          FILE(FICHEROS/DETECERE))
+
+    CRTPF      FILE(FICHEROS/CABECERE) +
+               SRCFILE(FICHEROS/QDDSSRC) SRCMBR(CABEVI) +
+               TEXT('Cab. Evid. Contables CEREFS - Recibos') +
+               OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
+               FILE(FICHEROS/CABECERE))
+
+    /*------------------------------------------------*/
+    /* Respaldo del Fichero RECIBOS antes del CEREFSN */
+    /*------------------------------------------------*/
+    CHGVAR     VAR(&TEX) VALUE('CEREFSNCL, ANTES DEL +
+               PGM-CEREFS')
+    CALL       PGM(CONCOPCL) PARM(RECIBOS FICHEROS +
+               RECIBOS LIBSEG30D C ' ' ' ' &TEX &NomProc)
+
+    /*------------------------------------------------------*/
+    /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */
+    /*------------------------------------------------------*/
+    CALL       PGM(PARALELOC/CEREFSN) +
+               PARM('ASICEREFSN'      +
+                    'CABECERE'        +
+                    'DETECERE'        +
+                    &NUMAPU)
+
+    /*-----------------------------------------------------------*/
+    /* Verificación de Generación contable y actualización final */
+    /*-----------------------------------------------------------*/
+    RTVMBRD FILE(FICHEROS/ASICEREFSN) NBRCURRCD(&NUMREG)
+    IF COND(&NUMREG > 0) THEN(DO)
+
+      /* Actualiza Evidencia Detalle*/
+      CPYF       FROMFILE(FICHEROS/DETECERE) +
+                 TOFILE(FICHEROS/DETEVI) MBROPT(*ADD) +
+                 FMTOPT(*NOCHK)
+
+      CPYF       FROMFILE(FICHEROS/CABECERE) +
+                 TOFILE(FICHEROS/CABEVI) MBROPT(*ADD) +
+                 FMTOPT(*NOCHK)
+
+      /* Actualiza ASIBOLSA*/
+      OVRDBF FILE(ASIFILE) TOFILE(FICHEROS/ASICEREFSN)
+      CALL PGM(EXPLOTA/ACASBON) PARM('002')
+      DLTOVR FILE(ASIFILE)
+
+      /* Respaldo de Parciales Apuntes Contables Evidencias*/
+      CHGVAR     VAR(&TEX) VALUE('CEREFSNCL - EVIDENCIAS +
+                 CONT. CEREFSN')
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(DETECERE FICHEROS +
+                 DETECERE LIBSEG1D C ' ' ' ' &TEX &NomProc)
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(CABECERE FICHEROS +
+                 CABECERE LIBSEG1D C ' ' ' ' &TEX &NomProc)
+
+      CHGVAR     VAR(&TEX) VALUE('CEREFSNCL - APUNTES +
+                 CONT. DESPUES DEL CEREFS')
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASICEREFSN FICHEROS +
+                 ASICEREFSN LIBSEG1D C ' ' ' ' &TEX &NomProc)
+
+      /*--------------------------------------------------------*/
+      Clrpfm     ASICEREFSN
+    ENDDO
+
+    /*--------------------------------*/
+    /* Fin del CEREFSN New            */
+    /*--------------------------------*/
+
+  endpgm

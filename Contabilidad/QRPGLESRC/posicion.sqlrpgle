@@ -431,13 +431,6 @@
           // Abono cuotas. (ID=4) RESTA
 
         Exec Sql
-          // SELECT COALESCE(SUM(IMPORTE*100), 0) 
-          // Into :WTOT_ANX
-          // From ANXSOLANX
-          // WHERE 
-          //   NUREAL = :WNUREAL
-          //   AND ID_ANEXO = 2
-          //   AND ESTATUS = 'P';    
           SELECT 
             Sum(Case
               When b.Tipo_Anexo = 'A' Then (IMPORTE*100) * -1
