@@ -1,0 +1,119 @@
+  PGM (&NomProc)
+    dcl  &NomProc  *char    8
+    dcl  &NUMAPU   *char    6
+    DCL  &TEX      *CHAR   50
+    DCL  &NUMREG   *DEC    10 0
+    DCL  &ERROR    *CHAR    1
+    DCL  &MSG      *CHAR  128
+
+    /*CALL NOEXISTE*/
+
+    /*------------------------------------------------*/
+    /* Respaldos antes del MC00004                    */
+    /*------------------------------------------------*/
+    CHGVAR    VAR(&TEX) VALUE('IN02, ANTES DE EJECUTAR +
+              PGM-MC00004')
+
+    CALL      PGM(EXPLOTA/CONCOPCL) PARM((CTOPERMC) +
+              (FICHEROS) (CTOPERMC) (LIBSEG30D)     +
+              (P) (' ') (' ') (&TEX) (&NomProc))
+
+    CHGVAR    VAR(&TEX) VALUE('Copia de parcial BLOMASTER +
+              antes de MC00004')
+    CALL      PGM(EXPLOTA/CONCOPCL) PARM((BLOMASTER) +
+              (FICHEROS) (BLOMASTER) (LIBSEG30D) ('P') +
+              (' ') (' ') (&TEX) (&NomProc))
+
+    /*---------------------------------------------------------*/
+    /* Creación de Ficheros Parciales:ASIFILEN, DETEVI, CABEVI */
+    /*---------------------------------------------------------*/
+    CRTPF     FILE(FICHEROS/ASIFILMC) +
+              SRCFILE(FICHEROS/QDDSSRC) +
+              SRCMBR(ASIFILEN) TEXT('ASIFILEN +
+              MASTERCARD') OPTION(*NOSRC *NOLIST) +
+              SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    MSGID(CPF0000) EXEC(CLRPFM +
+              FILE(FICHEROS/ASIFILMC))
+
+    CRTPF     FILE(FICHEROS/DETEMC04) +
+              SRCFILE(FICHEROS/QDDSSRC) SRCMBR(DETEVI) +
+              TEXT('Evidencias Contables MC00004') +
+              OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    MSGID(CPF0000) EXEC(CLRPFM +
+              FILE(FICHEROS/DETEMC04))
+
+    CRTPF     FILE(FICHEROS/CABEMC04) +
+              SRCFILE(FICHEROS/QDDSSRC) SRCMBR(CABEVI) +
+              TEXT('Cab. Evid. Contables MC00004') +
+              OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    MSGID(CPF0000) EXEC(CLRPFM +
+              FILE(FICHEROS/CABEMC04))
+
+
+    /*------------------------------------------------------*/
+    /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */
+    /*------------------------------------------------------*/
+    CALL      PGM(MC00004)           +
+              PARM(&ERROR            +
+                   'ASIFILMC'        +
+                   'CABEMC04'        +
+                   'DETEMC04'        +
+                   &NUMAPU)
+
+    IF        COND(&ERROR *EQ 'S') THEN(DO)
+
+      CHGVAR  VAR(&MSG) VALUE('**EXPLOTA/MC00004 CON  +
+              ERROR ** DE CLP.PROCNOCHE --> CLP.IN02M')
+
+      SNDDST  TYPE(*LMSG) +
+              TOINTNET((grupoexplotacion@dinersclub.es +
+              *CC) (grupoas400@dinersclub.es *CC) +
+              (cdfacturacion@DINERSCLUB.ES)) +
+              DSTD('ERROR: No se procesa +
+              BLOMASTER/L5181240') LONGMSG(&MSG)
+
+      GOTO    CMDLBL(FINFIN)
+
+    ENDDO
+    /*-----------------------------------------------------------*/
+    /* Verificación de Generación contable y actualización final */
+    /*-----------------------------------------------------------*/
+    RTVMBRD FILE(FICHEROS/ASIFILMC) NBRCURRCD(&NUMREG)
+    IF COND(&NUMREG > 0) THEN(DO)
+
+      /* Actualiza Evidencia Detalle*/
+      CPYF       FROMFILE(FICHEROS/DETEMC04) +
+                 TOFILE(FICHEROS/DETEVI) MBROPT(*ADD) +
+                 FMTOPT(*NOCHK)
+
+      CPYF       FROMFILE(FICHEROS/CABEMC04) +
+                 TOFILE(FICHEROS/CABEVI) MBROPT(*ADD) +
+                 FMTOPT(*NOCHK)
+
+      /* Actualiza ASIBOLSA*/
+      OVRDBF FILE(ASIFILE) TOFILE(FICHEROS/ASIFILMC)
+      CALL PGM(EXPLOTA/ACASBON) PARM('048')
+      DLTOVR FILE(ASIFILE)
+
+      /* Respaldo de Parciales Apuntes Contables Evidencias*/
+      CHGVAR     VAR(&TEX) VALUE('MC00004CL - EVIDENCIAS +
+                 CONTABLE')
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(DETEMC04 FICHEROS +
+                 DETEMC04 LIBSEG1D C ' ' ' ' &TEX &NomProc)
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(CABEMC04 FICHEROS +
+                 CABEMC04 LIBSEG1D C ' ' ' ' &TEX &NomProc)
+
+      CHGVAR     VAR(&TEX) VALUE('MC00004CL - APUNTES +
+                 CONT. DESPUES DEL MC00004')
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASIFILMC FICHEROS +
+                 ASIFILMC LIBSEG1D C ' ' ' ' &TEX &NomProc)
+
+      /*--------------------------------------------------------*/
+      Clrpfm     ASIFILMC
+    ENDDO
+
+    /*--------------------------------*/
+    /* Fin del MC00004CL New          */
+    /*--------------------------------*/
+    FINFIN:
+  endpgm
