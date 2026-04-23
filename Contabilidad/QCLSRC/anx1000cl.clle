@@ -34,10 +34,10 @@
      /*    Nueva version del ANX0100 (Actualizacion)       LM  */
      /*    PARALELO - Contabilidad por Producto                */
      /*--------------------------------------------------------*/
-             CALL PGM(EXPLOTA/CONTAB000) +
+             /*CALL PGM(EXPLOTA/CONTAB000) +
                   PARM(('ANX1000CL') +
                        ('ANX0100_P') +
-                       (&NOMPARA))
+                       (&NOMPARA))*/
      /*--------------------------------------------------------*/
 
              CRTPF      FILE(FICHEROS/FA_ANX) +
@@ -93,7 +93,17 @@
 /* Generacion de Registros de Anexos                                */
 /*------------------------------------------------------------------*/
              OVRDBF     FILE(ASIFILEN) TOFILE(ASIANEXOS)
-             CALL PGM(ANX0100) PARM(&NUMAPU)
+
+             /*CALL PGM(ANX0100) PARM(&NUMAPU)*/
+    /*------------------------------------------------------*/
+    /* Asiento traspaso pa a fa Diners/MC                   */
+    /*------------------------------------------------------*/
+    CALL       PGM(PARALELOC/ANX0100) +
+               PARM('ASIANEXOS'       +
+                    'CABEANX'         +
+                    'DETEANX'         +
+                    &NUMAPU)
+
              MONMSG MSGID(CPF0000 RPG0000) EXEC(DO)
             /* Si hay error, hacer rollback y salir del programa */
               ROLLBACK
@@ -163,13 +173,13 @@
     /*------------------------------------------------------*/
     /* Copia de Registros a Historicos                      */
     /*------------------------------------------------------*/
-             CALL       PGM(CONTAB102)       +
+             /*CALL       PGM(CONTAB102)       +
                         PARM('ASIANEXOS'     +
                             'CABEANX'        +
                             'DETEANX'        +
                             &NOMPARA         +
                             'N'              +
-                            'P')
+                            'P')*/
     /*--------------------------------------------------------*/
 /*=============================================================*/
 /*   23/5/2023 ELIMINAR SORT (SFA) QUE CLASIFICABA EL -FA-   */

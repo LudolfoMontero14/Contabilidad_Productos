@@ -1,0 +1,102 @@
+  PGM (&NomProc &IMOV)
+    dcl  &NomProc  *char  10
+    dcl  &NUMAPU   *char   6
+    DCL  &TEX      *CHAR  50
+    DCL  &NUMREG   *DEC   10 0
+    DCL  &IMOV     *CHAR  10
+
+    /*---------------------------------------------------------*/
+    /* Copy del IMOV al IMOVAPUN01 que utiliza el APUN01N      */
+    /*---------------------------------------------------------*/
+    CPYF      FROMFILE(FICHEROS/&IMOV) +
+              TOFILE(FICHEROS/IMOVAPUN01) +
+              MBROPT(*REPLACE) CRTFILE(*YES)
+
+    /*---------------------------------------------------------*/
+    /* Creación de Ficheros Parciales:ASIFILEN, DETEVI, CABEVI */
+    /*---------------------------------------------------------*/
+    CRTLF     FILE(FICHEROS/BOLRELG2) +
+              SRCFILE(FICHEROS/QDDSSRC) OPTION(*NOSRC +
+              *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    CPF0000
+
+    CRTPF     FILE(FICHEROS/APUNTE01) +
+              SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFILEN) +
+              OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    MSGID(CPF0000) EXEC(CLRPFM +
+              FILE(FICHEROS/APUNTE01))
+
+    CRTPF     FILE(FICHEROS/DETE37) +
+              SRCFILE(FICHEROS/QDDSSRC) SRCMBR(DETEVI) +
+              OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    MSGID(CPF0000) EXEC(CLRPFM +
+              FILE(FICHEROS/DETE37))
+
+    CRTPF     FILE(FICHEROS/CABE37) +
+              SRCFILE(FICHEROS/QDDSSRC) SRCMBR(CABEVI) +
+              OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    MSGID(CPF0000) EXEC(CLRPFM +
+              FILE(FICHEROS/CABE37))
+
+    /*------------------------------------------------*/
+    /* Respaldo del Fichero RECIBOS antes del CEREFSN */
+    /*------------------------------------------------*/
+    CHGVAR     VAR(&TEX) VALUE('APUN01NCL, IMOV ANTES DEL +
+               PGM-APUN01N')
+    CALL       PGM(CONCOPCL) PARM(IMOVAPUN01 FICHEROS +
+               IMOVAPUN01 LIBSEG30D C ' ' ' ' &TEX &NomProc)
+
+    /*------------------------------------------------------*/
+    /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */
+    /*------------------------------------------------------*/
+    CALL       PGM(APUN01N)         +
+               PARM('APUNTE01'      +
+                    'CABE37'        +
+                    'DETE37'        +
+                    &NUMAPU)
+
+    /*-----------------------------------------------------------*/
+    /* Verificación de Generación contable y actualización final */
+    /*-----------------------------------------------------------*/
+    RTVMBRD FILE(FICHEROS/APUNTE01) NBRCURRCD(&NUMREG)
+    IF COND(&NUMREG > 0) THEN(DO)
+
+      /* Actualiza Evidencia Detalle*/
+      CPYF       FROMFILE(FICHEROS/DETE37) +
+                 TOFILE(FICHEROS/DETEVI) MBROPT(*ADD) +
+                 FMTOPT(*NOCHK)
+
+      CPYF       FROMFILE(FICHEROS/CABE37) +
+                 TOFILE(FICHEROS/CABEVI) MBROPT(*ADD) +
+                 FMTOPT(*NOCHK)
+
+      /* Actualiza ASIBOLSA*/
+      OVRDBF FILE(ASIFILE) TOFILE(FICHEROS/APUNTE01)
+      CALL PGM(EXPLOTA/ACASBON) PARM('007')
+      DLTOVR FILE(ASIFILE)
+
+      /* Respaldo de Parciales Apuntes Contables Evidencias*/
+      CHGVAR  VAR(&TEX) VALUE('APUN01NCL, DESPUES DEL +
+                          PGM-APUN01N')
+      CALL    PGM(EXPLOTA/CONCOPCL) PARM(DETE37 FICHEROS +
+              DETE37 LIBSEG1D M ' ' ' ' &TEX &NomProc)
+      CALL    PGM(EXPLOTA/CONCOPCL) PARM(CABE37 FICHEROS +
+              CABE37 LIBSEG1D M ' ' ' ' &TEX &NomProc)
+
+      CHGVAR     VAR(&TEX) VALUE('APUN01NCL - APUNTES +
+                 CONT. DESPUES DEL APUN01N')
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(APUNTE01 FICHEROS +
+                 APUNTE01 LIBSEG1D C ' ' ' ' &TEX &NomProc)
+
+      /*--------------------------------------------------------*/
+      Clrpfm     APUNTE01
+    ENDDO
+
+    DLTF       FILE(FICHEROS/BOLRELG2)
+    MONMSG     CPF0000
+
+    /*--------------------------------*/
+    /* Fin del APUN01N New            */
+    /*--------------------------------*/
+
+  endpgm
