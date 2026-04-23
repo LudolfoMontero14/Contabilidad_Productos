@@ -1,5 +1,6 @@
      H DECEDIT('0,') DATEDIT(*DMY.) DFTACTGRP(*NO)
-     H BNDDIR('CONTBNDDIR':'UTILITIES/UTILITIES':'CDV_UTL':'BINESBD')
+     H BNDDIR('EXPLOTA/CDV_UTL')
+     H BNDDIR('EXPLOTA/BINESBD')
       *****************************************************************
       *             --CONCILIACION CTAS. DE VIAJES--                 **
       *                                                              **
@@ -12,17 +13,14 @@
       *****************************************************************
      FCOBATRLG  IF   E           K DISK
      FFAGENCON  IF   E           K DISK
-     FOPAGECOL1 IF   E           K DISK    ExtFile('FICHEROS/OPAGECOL1')        OPAGECO
-     FOPAGECOLG7IF   E           K DISK    ExtFile('FICHEROS/OPAGECOLG7')       OPAGECO_B
-     F                                     RENAME(OPAGCOW:OPAGCOB)
-     FOPAGECOLH1IF   E           K DISK    ExtFile('FICHEROS/OPAGECOLH1')       OPAGECOMIH
-     F                                     RENAME(OPAGCOW:OPAGCHI)
+     FOPAGECOL1 IF   E           K DISK                                         OPAGECO
+     FOPAGECOLG7IF   E           K DISK    RENAME(OPAGCOW:OPAGCOB)              OPAGECO_B
+     FOPAGECOLH1IF   E           K DISK    RENAME(OPAGCOW:OPAGCHI)              OPAGECOMIH
      FMSOCIO    IF   F  731     8AIDISK    KEYLOC(3)
-     F                                     ExtFile('FICHEROS/MSOCIO')
      FDESCRC17  O    E             DISK
      FPAC17     O    E             DISK
      FOPAGECO17 O    E             DISK    RENAME(OPAGCOW:OPAGC17)
-      *FASICOC17  O    F  101        DISK
+     FASICOC17  O    F  105        DISK
      FCABE10    O    F   78        DISK
      FDETE10    O    F  157        DISK
      D*----------------------------------------------------------------
@@ -35,61 +33,46 @@
      D*--------------------------------
      D* REGISTRO DEL FICHERO -ASIFILE-
      D*--------------------------------
-     D* DSCONT          DS
-     D*  CAPUNT                 1      6
-     D*  APUN5                  2      6
-     D*  CCTAMA                 7     11
-     D*  CCTAFI                12     13
-     D*  CCTAAU                14     18
-     D*  CCODIG                19     21  0
-     D*  CPROGR                22     27    INZ('COBATR')
-     D*  CFECON                28     35  0
-     D*  CDEHA                 36     36
-     D*  CREFOP                37     42
-     D*  CFEVTO                43     50  0 INZ(00000000)
-     D*  CCONCE                51     80
-     D*  CIMPOR                81     94  3
-     D*  CMONED                95     95    INZ('1')
-     D*  CPROVI                96    101
+     D DSCONT          DS
+     D  CAPUNT                 1      6
+     D  APUN5                  2      6
+     D  CCTAMA                 7     11
+     D  CCTAFI                12     13
+     D  CCTAAU                14     18
+     D  CCODIG                19     21  0
+     D  CPROGR                22     27    INZ('COBATR')
+     D  CFECON                28     35  0
+     D  CDEHA                 36     36
+     D  CREFOP                37     42
+     D  CFEVTO                43     50  0 INZ(00000000)
+     D  CCONCE                51     80
+     D  CIMPOR                81     94  3
+     D  CMONED                95     95    INZ('1')
+     D  CPROVI                96    101
+  \	 D  CTIPOP               102    104  0 Inz(000)
+     D  CCHEQU               105    105    INZ(' ')
 
-        /COPY EXPLOTA/QRPGLESRC,DSTIMSYS
-        /COPY EXPLOTA/QRPGLESRC,DSAEVIDE
-        /COPY EXPLOTA/QRPGLESRC,CDV_UTL_P
-        /COPY EXPLOTA/QRPGLESRC,BINES_CP
+      /COPY EXPLOTA/QRPGLESRC,DSTIMSYS
 
-        /Define Funciones_CONTABSRV
-        /Define PGM_ASBUNU
-        /Define Estructuras_Asientos_Evidencias
-        /define Common_Variables
-        /Include Explota/QRPGLESRC,CONTABSRVH
+      /COPY EXPLOTA/QRPGLESRC,DSAEVIDE
+      /COPY EXPLOTA/QRPGLESRC,CDV_UTL_P
+      /COPY EXPLOTA/QRPGLESRC,BINES_CP
 
-        /copy UTILITIES/QRPGLESRC,PSDSCP      // psds
-        /Include UTILITIES/QRPGLESRC,SQLDIAGNCP  // Errores diagnostico SQL
-
-        Dcl-S fechaSistema Timestamp;
-        Dcl-s WApunte      Char(6);
-        Dcl-s fecproces    Zoned(8);
-        Dcl-s WCODPROD     Zoned(3);
-        Dcl-s WCODCONTAB   Zoned(5:0) Inz(43); //
-        Dcl-s WInd         Zoned(3);
-        Dcl-s WNomAsi      Char(10) Inz('ASICOBATR');  
-
-        dcl-ds CardVault_Ds likeds(DsCardVault);
-        dcl-ds Bines_Ds likeds(Bines_T);
-        dcl-s VPAIS zoned(3:0) inz(0);
-        dcl-s VNUREAL zoned(8:0) inz(0);
-        dcl-s VPAN char(19) inz(*blanks);
-
+       dcl-ds CardVault_Ds likeds(DsCardVault);
+       dcl-ds Bines_Ds likeds(Bines_T);
+       dcl-s VPAIS zoned(3:0) inz(0);
+       dcl-s VNUREAL zoned(8:0) inz(0);
+       dcl-s VPAN char(19) inz(*blanks);
 
      D                 DS
      D  PREEXP                 1     20
      D  EXPEDI                 1     12
-
+     D*-----
      D                 DS
      D  PNUCRU                 1     15
      D  NBILLE                 1     10
      D  NAUTOR                 1      4
-
+     D*-----
      D                 DS
      D  KEYDES                 1      9  0
      D  TRABAJ                 1      3  0
@@ -97,9 +80,6 @@
      D  NUREG                  5      9  0
 
      D INIREF          C                   'EXPT.AG.'
-
-       // Array / Matriz que totaliza importes por productos
-       dcl-ds Acumulador likeds(AcumuladorTpl) Dim(100) Inz;
 
      IMSOCIO    NS
      I                                  1   14 0NS14
@@ -110,19 +90,6 @@
      C*-------------
      C     *ENTRY        PLIST                                                                 COMPS
      C                   PARM                    NUMALF            3            -Nº.TRABAJO    COMPS
-     C                   PARM                    NUMApun           6            -Nº.APUNTE
-
-        // inicializamos Array / Matriz
-        Reset Acumulador;
-
-        fechaSistema = %timestamp();
-        WApunte = CONTABSRV_Asignar_Numero_Apunte(fechaSistema);
-        AAPUNT = WApunte;  
-        NUMApun = WApunte;
-        //fechaSistema = fechaSistema -  %days(1);
-        //fecproces = %dec(%char(%date(fechaSistema):*eur0):8:0);
-        fecproces = %dec(%char(%date():*eur0):8:0);
-
      C*----------------------------------------------
      C* DESCRFAC (Nº.TRABAJO) BUSCO ULTIMO ASIGNADO
      C*----------------------------------------------
@@ -177,9 +144,8 @@
      C     GTADES        IFNE      ATADES
      C*-
      C                   SETOFF                                       33
-      *C                   SETON                                        11
-      *C     GTADES        CHAIN     MSOCIO                             11
-      *C  N11CONDIC        COMP      'C'                                    33
+     C     GTADES        CHAIN     MSOCIO
+      /Free
        // Recuperar PAN desde CardVault, como en ATR0004ED, y país desde BINES
        VPAIS = 0;
        Clear CardVault_Ds;
@@ -205,13 +171,9 @@
        If %Found(MSOCIO) and CONDIC = 'C';
          *IN33 = *On;
        EndIf;
-
-        Exec Sql
-          SELECT SCODPR
-          INTO :WCODPROD
-          FROM Ficheros.T_MSOCIO
-          WHERE NUREAL = :GTADES;
-
+      /End-Free
+     C* N11CONDIC        COMP      'C'                                    33
+     C*-
      C                   ENDIF
      C*------------------------------------
      C* ACTUALIZAR: PA, DESCRFAC
@@ -224,14 +186,7 @@
      C                   ADD       GIMPOR        TOBABP           13 0          -TOT.TRASPASADO
      C  N33              ADD       GIMPOR        TOTRNC           10 0          -TOT.TRAS.NO CO
      C   33              ADD       GIMPOR        TOTRSC           10 0          -TOT.TRAS.SI CO
-
-        // Aqui lo logica para cargar el arreglo
-          Acumula_importe(GIMPOR/100:WCODPROD);
-        //-------------------------------
-
      C                   ENDDO
-     C
-     C
      C*----------------------------------------------------------------
      C*--             F I N A L    P R O G R A M A                   --
      C*----------------------------------------------------------------
@@ -239,10 +194,7 @@
      C*--------------------
      C* ASIENTOS - TOTALES
      C*--------------------
-
-      ****C                   EXSR      ASIC17                                **ASIFILE**
-         Genera_Contabilidad();
-
+     C                   EXSR      ASIC17                                       **ASIFILE**
      C                   EXSR      TOTC17                                       **TOTASAX**
      C*---------------------
      C                   EXCEPT    TOT
@@ -308,7 +260,7 @@
      C                   CLEAR                   GDESCR
      C*-
      C                   Z-ADD     KEYDES        GKEY
-      *C                   Z-ADD     999           GPAIS
+     C*                  Z-ADD     999           GPAIS
      C                   Z-ADD     VPAIS         GPAIS
      C                   Z-ADD     AMDSYS        GPURGE
      C                   MOVEL     PREEXP        GNOMES                         -EXPEDIENTE-
@@ -427,55 +379,55 @@
      C*****************************************************************
      C**          (SUBRUTINA)  ASIENTOS  CONTABLES  -ASIFILE-        **
      C*****************************************************************
-      *C     ASIC17        BEGSR
+     C     ASIC17        BEGSR
      C*------------------------------------------
      C* TRASPASOS, TARJETA DESTINO -SI- CONCILIA
      C*------------------------------------------
-      *C     TOTRSC        IFNE      0
-      *C                   Z-ADD     *DATE         CFECON
-      *C                   Z-ADD     359           CCODIG                     -TSO.FACT.BO
-      *C                   MOVE      *BLANKS       CCONCE
-      *C                   MOVE      '1'           CMONED                     -EN EUROS
-      *C                   Z-ADD     TOTRSC        CIMPOR             13      -CTMOS.EURO
-      *C  N13              MOVE      'D'           CDEHA
-      *C  N13              MOVEL     '40030'       CCTAMA
-      *C  N13              EXCEPT    APUNTE                                   **ASIFILE**
-      *C  N13              MOVE      'H'           CDEHA
-      *C  N13              MOVEL     '4325 '       CCTAMA
-      *C  N13              EXCEPT    APUNTE                                   **ASIFILE**
-      *C   13              MULT      -1            CIMPOR
-      *C   13              MOVE      'D'           CDEHA
-      *C   13              MOVEL     '4325 '       CCTAMA
-      *C   13              EXCEPT    APUNTE                                   **ASIFILE**
-      *C   13              MOVE      'H'           CDEHA
-      *C   13              MOVEL     '40030'       CCTAMA
-      *C   13              EXCEPT    APUNTE                                   **ASIFILE**
-      *C                   ENDIF
+     C     TOTRSC        IFNE      0
+     C                   Z-ADD     *DATE         CFECON
+     C                   Z-ADD     359           CCODIG                         -TSO.FACT.BO
+     C                   MOVE      *BLANKS       CCONCE
+     C                   MOVE      '1'           CMONED                         -EN EUROS
+     C                   Z-ADD     TOTRSC        CIMPOR                 13      -CTMOS.EURO
+     C  N13              MOVE      'D'           CDEHA
+     C  N13              MOVEL     '40030'       CCTAMA
+     C  N13              EXCEPT    APUNTE                                       **ASIFILE**
+     C  N13              MOVE      'H'           CDEHA
+     C  N13              MOVEL     '4325 '       CCTAMA
+     C  N13              EXCEPT    APUNTE                                       **ASIFILE**
+     C   13              MULT      -1            CIMPOR
+     C   13              MOVE      'D'           CDEHA
+     C   13              MOVEL     '4325 '       CCTAMA
+     C   13              EXCEPT    APUNTE                                       **ASIFILE**
+     C   13              MOVE      'H'           CDEHA
+     C   13              MOVEL     '40030'       CCTAMA
+     C   13              EXCEPT    APUNTE                                       **ASIFILE**
+     C                   ENDIF
      C*------------------------------------------
      C* TRASPASOS, TARJETA DESTINO -NO- CONCILIA
      C*------------------------------------------
-      *C     TOTRNC        IFNE      0
-      *C                   Z-ADD     *DATE         CFECON
-      *C                   Z-ADD     359           CCODIG                      -TSO.FACT.BO
-      *C                   MOVE      *BLANKS       CCONCE
-      *C                   MOVE      '1'           CMONED                      -EN EUROS
-      *C                   Z-ADD     TOTRNC        CIMPOR              13      -CTMOS.EURO
-      *C  N13              MOVE      'D'           CDEHA
-      *C  N13              MOVEL     '40030'       CCTAMA
-      *C  N13              EXCEPT    APUNTE                                    **ASIFILE**
-      *C  N13              MOVE      'H'           CDEHA
-      *C  N13              MOVEL     '4321 '       CCTAMA
-      *C  N13              EXCEPT    APUNTE                                    **ASIFILE**
-      *C   13              MULT      -1            CIMPOR
-      *C   13              MOVE      'D'           CDEHA
-      *C   13              MOVEL     '4321 '       CCTAMA
-      *C   13              EXCEPT    APUNTE                                    **ASIFILE**
-      *C   13              MOVE      'H'           CDEHA
-      *C   13              MOVEL     '40030'       CCTAMA
-      *C   13              EXCEPT    APUNTE                                    **ASIFILE**
-      *C                   ENDIF
+     C     TOTRNC        IFNE      0
+     C                   Z-ADD     *DATE         CFECON
+     C                   Z-ADD     359           CCODIG                         -TSO.FACT.BO
+     C                   MOVE      *BLANKS       CCONCE
+     C                   MOVE      '1'           CMONED                         -EN EUROS
+     C                   Z-ADD     TOTRNC        CIMPOR                 13      -CTMOS.EURO
+     C  N13              MOVE      'D'           CDEHA
+     C  N13              MOVEL     '40030'       CCTAMA
+     C  N13              EXCEPT    APUNTE                                       **ASIFILE**
+     C  N13              MOVE      'H'           CDEHA
+     C  N13              MOVEL     '4321 '       CCTAMA
+     C  N13              EXCEPT    APUNTE                                       **ASIFILE**
+     C   13              MULT      -1            CIMPOR
+     C   13              MOVE      'D'           CDEHA
+     C   13              MOVEL     '4321 '       CCTAMA
+     C   13              EXCEPT    APUNTE                                       **ASIFILE**
+     C   13              MOVE      'H'           CDEHA
+     C   13              MOVEL     '40030'       CCTAMA
+     C   13              EXCEPT    APUNTE                                       **ASIFILE**
+     C                   ENDIF
      C*------------------------------------------
-      *C                   ENDSR
+     C                   ENDSR
      C*****************************************************************
      C**  (SUBRUTINA)  LINEAS PARA FICHERO "TOTALES" -TOTASAX-       **
      C*****************************************************************
@@ -510,15 +462,15 @@
       /End-Free
      C                   Z-ADD     99            LIN               3 0
      C                   MOVEL     HORSYS        APROVI
-     C*                   MOVEL     HORSYS        CPROVI
+     C                   MOVEL     HORSYS        CPROVI
      C*----------------------------------
      C*-- EVIDENCIA DEPART. CONTABILIDAD
      C*----------------------------------
-     C*                   CALL      'ASBUNU'                                     -Nº. APUNTE
-     C*                   PARM                    AÑOSYS_ALF2                    -Nº. APUNTE
-     C*                   PARM                    MESSYS_ALF                     -Nº. APUNTE
-     C*                   PARM                    CAPUNT                         -Nº. APUNTE
-     C*                   MOVEL     CAPUNT        AAPUNT
+     C                   CALL      'ASBUNU'                                     -Nº. APUNTE
+     C                   PARM                    AÑOSYS_ALF2                    -Nº. APUNTE
+     C                   PARM                    MESSYS_ALF                     -Nº. APUNTE
+     C                   PARM                    CAPUNT                         -Nº. APUNTE
+     C                   MOVEL     CAPUNT        AAPUNT
 
      C                   ENDSR
 
@@ -536,7 +488,7 @@
      ODETE10    E            CAB
      O                                            6 'COBATR'
      O                                           21 'Nº.APUNTE: '
-     O                       WApunte             26
+     O                       APUN5               26
      O                                           60 '** CONCILIACION CUENTAS '
      O                                           72 'DE VIAJES **'
      O                                          128 'PAGINA'
@@ -628,50 +580,9 @@
      O*----------------------------------------------------------------
      O*--               A  S  I  E  N  T  O  S                       --
      O*----------------------------------------------------------------
-      *OASICOC17  E            APUNTE
-      *O                       DSCONT             101
+     OASICOC17  E            APUNTE
+     O                       DSCONT             105
      O*----------------------------------------------------------------
-
-        //-----------------------------------------------------------------
-        // Acumula_importe
-        //-----------------------------------------------------------------
-        dcl-proc Acumula_importe;
-          dcl-pi *n Ind;
-            P_Impor   Packed(14:3) const;
-            p_Product Zoned(3);
-          end-pi;
-
-          Dcl-s WIndx    Zoned(3);
-
-          WIndx = %lookup(p_Product: Acumulador(*).Cod_prod:1);
-          if WIndx > 0;
-              Acumulador(WIndx).Total += P_Impor;
-          else;
-              WInd += 1;
-              Acumulador(WInd).Cod_prod = p_Product;
-              Acumulador(WInd).Total    = P_Impor;
-          endif;
-
-          Return *On;
-
-        end-proc;
-        //-----------------------------------------------------------------
-        // Genera_Contabilidad
-        //-----------------------------------------------------------------
-        dcl-proc Genera_Contabilidad;
-          dcl-pi *n;
-          end-pi;
-
-          CONTABSRV_Genera_Contabilidad_Totales_Producto(
-            Acumulador      // Arreglo de Totales por Producto
-            :WInd           // Indice de registros Grabados en el Arreglo
-            :WCodContab     // Indice Contable: 5 Para este proceso
-            :WApunte        // NUmero de Apunte
-            :fecproces      // Fecha del asiento DDMMAAAA
-            :WNomAsi        // Nombre Fichero Parcial ASIFILEn
-            );
-
-        end-proc;
 **
 BILLETE RENFE NUM. AUT.
 PAQUETE AGEN. NUM. AUT.

@@ -1,0 +1,135 @@
+  PGM (&NUTRA &NomProc )
+    dcl  &NomProc  *char  10
+    dcl  &NUMAPU   *char   6
+    DCL  &TEX      *CHAR  50
+    DCL  &NUMREG   *DEC   10 0
+    DCL  &NUTRA    *CHAR   3
+
+    /*---------------------------------------------------------*/
+    /* Creación de Ficheros Parciales:ASIFILEN, DETEVI, CABEVI */
+    /*---------------------------------------------------------*/
+    CRTLF     FILE(FICHEROS/COBATRLG) +
+              SRCFILE(FICHEROS/QDDSSRC) +
+              TEXT('conciliacion, logico -cobatrok- +
+              traspasos bolsas') OPTION(*NOLIST *NOSRC) +
+              LVLCHK(*NO) AUT(*ALL)
+    MONMSG     CPF0000
+
+    CRTLF     FILE(FICHEROS/OPAGECOL1) +
+              SRCFILE(FICHEROS/QDDSSRC) +
+              TEXT('conciliacion, logico -OPAGECO- ') +
+              OPTION(*NOLIST *NOSRC) LVLCHK(*NO) AUT(*ALL)
+    MONMSG     CPF0000
+
+    CRTLF     FILE(FICHEROS/OPAGECOLG7) +
+              SRCFILE(FICHEROS/QDDSSRC) +
+              TEXT('conciliacion, logico -OPAGECO_B') +
+              OPTION(*NOLIST *NOSRC) LVLCHK(*NO) AUT(*ALL)
+    MONMSG     CPF0000
+
+    CRTLF     FILE(FICHEROS/OPAGECOLH1) +
+              SRCFILE(FICHEROS/QDDSSRC) +
+              TEXT('conciliacion, logico -OPAGECOMIH') +
+              OPTION(*NOLIST *NOSRC) LVLCHK(*NO) AUT(*ALL)
+    MONMSG     CPF0000
+
+    CRTPF     FILE(FICHEROS/DESCRC17) +
+              SRCFILE(FICHEROS/QDDSSRC) +
+              SRCMBR(DESCRFAC) TEXT('CONCILIACION, +
+              TRASPASOS DIARIOS ENTRE BOLSAS') +
+              OPTION(*NOSRC *NOLIST) SIZE(*NOMAX) +
+              LVLCHK(*NO) AUT(*ALL)
+    MONMSG     CPF0000 EXEC(CLRPFM FICHEROS/DESCRC17)
+
+    CRTPF     FILE(FICHEROS/PAC17) +
+              SRCFILE(FICHEROS/QDDSSRC) SRCMBR(PA) +
+              TEXT('CONCILIACION, TRASPASOS DIARIOS +
+              ENTRE BOLSAS') OPTION(*NOSRC *NOLIST) +
+              SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    CPF0000 EXEC(CLRPFM FICHEROS/PAC17)
+
+    CRTPF     FILE(FICHEROS/OPAGECO17) +
+              SRCFILE(FICHEROS/QDDSSRC) SRCMBR(OPAGECO) +
+              TEXT('CONCILIACION, TRASPASOS DIARIOS +
+              ENTRE BOLSAS') OPTION(*NOSRC *NOLIST) +
+              SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    MSGID(CPF0000) EXEC(CLRPFM +
+              FILE(FICHEROS/OPAGECO17))
+
+    CRTPF     FILE(FICHEROS/ASICOBATR) +
+              SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFILEN) +
+              TEXT('CONCILIACION, TRASPASOS DIARIOS +
+              ENTRE BOLSAS') OPTION(*NOSRC *NOLIST) +
+              SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    CPF0000 EXEC(CLRPFM FICHEROS/ASICOBATR)
+
+    CRTPF     FILE(FICHEROS/DETE10) +
+              SRCFILE(FICHEROS/QDDSSRC) SRCMBR(DETEVI) +
+              OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    MSGID(CPF0000) EXEC(CLRPFM +
+              FILE(FICHEROS/DETE10))
+    
+    CRTPF     FILE(FICHEROS/CABE10) +
+              SRCFILE(FICHEROS/QDDSSRC) SRCMBR(CABEVI) +
+              OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
+    MONMSG    MSGID(CPF0000) EXEC(CLRPFM +
+              FILE(FICHEROS/CABE10))
+    
+    CRTPF     FILE(FICHEROS/VIDEOCON) RCDLEN(1000) +
+              TEXT('CONCILIACION, CARTAS VIDEO DE +
+              TRASPASOS') OPTION(*NOLIST *NOSRC) +
+              SIZE(*NOMAX) LVLCHK(*NO) AUT(*ALL)
+    MONMSG     CPF0000
+
+
+    /*------------------------------------------------------*/
+    /* ACUMULACION RECIBOS AL BORECI -FACT.SOCIOS-          */
+    /*------------------------------------------------------*/
+    CALL    PGM(COBATRN)      +
+            PARM(&NUTRA       +
+                 &NUMAPU)
+
+    /*-----------------------------------------------------------*/
+    /* Verificación de Generación contable y actualización final */
+    /*-----------------------------------------------------------*/
+    RTVMBRD FILE(FICHEROS/ASICOBATR) NBRCURRCD(&NUMREG)
+    IF COND(&NUMREG > 0) THEN(DO)
+
+      /* Actualiza Evidencia Detalle*/
+      CPYF       FROMFILE(FICHEROS/DETE10) +
+                 TOFILE(FICHEROS/DETEVI) MBROPT(*ADD) +
+                 FMTOPT(*NOCHK)
+
+      CPYF       FROMFILE(FICHEROS/CABE10) +
+                 TOFILE(FICHEROS/CABEVI) MBROPT(*ADD) +
+                 FMTOPT(*NOCHK)
+
+      /* Actualiza ASIBOLSA*/
+      CALL      PGM(EXPLOTA/TRACE) +
+                PARM('                             +
+                PROGRAMA  ACASBO  EN +
+                EJECUCION                   ' ' ' &NomProc)
+      OVRDBF     FILE(ASIFILE) TOFILE(FICHEROS/ASICOC17)
+      CALL       PGM(EXPLOTA/ACASBON) PARM('029')
+      DLTOVR     FILE(ASIFILE)
+
+      /* Respaldo de Parciales Apuntes Contables Evidencias*/
+      CHGVAR     VAR(&TEX) VALUE('COBATRNCL, DESPUES DEL +
+                 PGM-COBATR')
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(DETE10 FICHEROS +
+                 DETE10 LIBSEG1D M ' ' ' ' &TEX &NomProc)
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(CABE10 FICHEROS +
+                 CABE10 LIBSEG1D M ' ' ' ' &TEX &NomProc)
+
+      CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASICOBATR FICHEROS +
+                 ASICOBATR LIBSEG1D C ' ' ' ' &TEX &NomProc)
+
+      /*--------------------------------------------------------*/
+      Clrpfm     ASICOBATR
+    ENDDO
+
+    /*--------------------------------*/
+    /* Fin del CEREFSN New            */
+    /*--------------------------------*/
+
+  endpgm

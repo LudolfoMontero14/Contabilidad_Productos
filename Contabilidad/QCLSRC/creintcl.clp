@@ -389,75 +389,12 @@ CINCO:       CALL       PGM(EXPLOTA/TRACE) +
                           PROGRAMA  APUN01  EN EJECUCION' ' ' CREINTCL)
 
      /*--------------------------------------------------------*/
-     /*    Nueva version del CEREFS (CEREFSN)             LM   */
-     /*    PARALELO - Contabilidad por Producto                */
-     /*--------------------------------------------------------*/
-             CPYF       FROMFILE(FICHEROS/&IMOV) +
-                          TOFILE(FICHEROS/IMOVAPUN01) +
-                          MBROPT(*REPLACE) CRTFILE(*YES)
-
-             CALL PGM(EXPLOTA/CONTAB000) +
-                  PARM(('CREINTCL') +
-                       ('APUN01N_P') +
-                       (&NOMPARA))
+     /*    Nueva version del APUN01 (APUN01N)             LM   */
      /*--------------------------------------------------------*/
 
-             CRTLF      FILE(FICHEROS/BOLRELG2) +
-                          SRCFILE(FICHEROS/QDDSSRC) OPTION(*NOSRC +
-                          *NOLIST) LVLCHK(*NO) AUT(*ALL)
-             MONMSG     CPF0000
+      CALL       PGM(EXPLOTA/APUN01NCL) PARM(&IMOV 'CREINTCL')
 
-             CRTPF      FILE(FICHEROS/APUNTE01) +
-                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(ASIFIVA) +
-                          OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
-             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
-                          FILE(FICHEROS/APUNTE01))
-
-             CRTPF      FILE(FICHEROS/DETE37) +
-                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(DETEVI) +
-                          OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
-             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
-                          FILE(FICHEROS/DETE37))
-
-             CRTPF      FILE(FICHEROS/CABE37) +
-                          SRCFILE(FICHEROS/QDDSSRC) SRCMBR(CABEVI) +
-                          OPTION(*NOSRC *NOLIST) LVLCHK(*NO) AUT(*ALL)
-             MONMSG     MSGID(CPF0000) EXEC(CLRPFM +
-                          FILE(FICHEROS/CABE37))
-
-             OVRDBF     FILE(ASIFIVA) TOFILE(*LIBL/APUNTE01)
-             CALL       PGM(EXPLOTA/APUN01)
-
-/*-------------------------------------- */
-/* Copias Parciales Evidencias Contables */
-/*-------------------------------------- */
-
-             CPYF       FROMFILE(FICHEROS/DETE37) +
-                          TOFILE(FICHEROS/DETEVI) MBROPT(*ADD) +
-                          FMTOPT(*NOCHK)
-
-             CPYF       FROMFILE(FICHEROS/CABE37) +
-                          TOFILE(FICHEROS/CABEVI) MBROPT(*ADD) +
-                          FMTOPT(*NOCHK)
-
-    /*------------------------------------------------------*/
-    /* Copia de Registros a Historicos                      */
-    /*------------------------------------------------------*/
-             CALL       PGM(CONTAB102)      +
-                        PARM('APUNTE01'     +
-                            'CABE37'        +
-                            'DETE37'        +
-                            &NOMPARA        +
-                            'V'             +
-                            'P')
      /*--------------------------------------------------------*/
-
-             CHGVAR     VAR(&TEX) VALUE('CREINTCL, DESPUES DEL +
-                          PGM-APUN01')
-             CALL       PGM(EXPLOTA/CONCOPCL) PARM(DETE37 FICHEROS +
-                          DETE37 LIBSEG1D M ' ' ' ' &TEX CREINTCL)
-             CALL       PGM(EXPLOTA/CONCOPCL) PARM(CABE37 FICHEROS +
-                          CABE37 LIBSEG1D M ' ' ' ' &TEX CREINTCL)
 
              CALL       PGM(TRACE) PARM('+1' ' ' CREINTCL)
 /*---------------*/
@@ -469,12 +406,7 @@ SEIS:
 /*---------------*/
 /*  ACASBO       */
 /*---------------*/
-SIETE:       CALL       PGM(EXPLOTA/TRACE) +
-                          PARM('                             +
-                          PROGRAMA  ACASBO  EN EJECUCION' ' ' CREINTCL)
-
-             OVRDBF     FILE(ASIFILE) TOFILE(*LIBL/APUNTE01)
-             CALL       PGM(EXPLOTA/ACASBO) PARM('007')
+SIETE:       
 
              CALL       PGM(TRACE) PARM('+1' ' ' CREINTCL)
 /*---------------*/
@@ -494,13 +426,9 @@ OCHO:        CALL       PGM(EXPLOTA/TRACE) +
  /*---*/
              DLTOVR     FILE(ASIFIVA)
              DLTOVR     FILE(ASIFILE)
-             CALL       PGM(EXPLOTA/CONCOPCL) PARM(APUNTE01 FICHEROS +
-                          APUNTE01 LIBSEG1D M ' ' ' ' &TEX CREINTCL)
              CALL       PGM(EXPLOTA/CONCOPCL) PARM(ASICXINTER +
                           FICHEROS ASICXINTER LIBSEG1D M ' ' ' ' +
                           &TEX CREINTCL)
-             DLTF       FILE(FICHEROS/BOLRELG2)
-             MONMSG     CPF0000
              DLTF       FILE(FICHEROS/IMOVXXL5)
              MONMSG     CPF0000
              DLTF       FILE(IMOVFACPY)
