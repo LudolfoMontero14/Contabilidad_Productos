@@ -58,6 +58,7 @@
     IMP_EUROS_NETO  Zoned(11:2);
     IMP_COMIS_EUROS Zoned(11:2);
     Fecha_Recap Char(10);
+    Moneda_Pais Char(3);
   end-ds;
 
   dcl-ds Acumulador_Pais_Recap Qualified Dim(100) Inz;
@@ -76,8 +77,8 @@
   Dcl-S TOT_COMIS    packed(14:3) Inz;
   Dcl-S TOT_DEBE     Zoned(12:2)  Inz;
   Dcl-S TOT_HABER    Zoned(12:2)  Inz;
-  Dcl-s WInd         Zoned(3);
-  Dcl-s WInd_PR      Zoned(3);
+  Dcl-s WInd         Zoned(3) INZ;
+
   Dcl-s fecproces    Zoned(8);
   Dcl-s ID_Contab    Zoned(5) Inz(41); //Id_Asiento APUN01N
   Dcl-s WApunte      Char(6);
@@ -132,7 +133,8 @@
       Dec(Round(r.Imp_original*rate_Comis, 2), 11, 2) Imp_Comis_Orignal,
       Dec(Round(r.Imp_Bruto_Euros - (r.Imp_Bruto_Euros*rate_Comis), 2), 11, 2) Imp_Euros_Neto,
       Dec(Round(r.Imp_Bruto_Euros*rate_Comis, 2), 11, 2) Imp_Comis_Euros,
-      r.Fecha_Recap
+      r.Fecha_Recap,
+      r.Moneda_Pais
     from (
         SELECT 
           WPais, 
@@ -142,7 +144,8 @@
           Dec(WRATE/100, 11, 6)  rate_Comis,
           (SubString(Digits(WFEREC), 1, 2) || '-' ||
            SubString(Digits(WFEREC), 3, 2) || '-' ||
-           SubString(Digits(WFEREC), 5, 4)) as Fecha_Recap
+           SubString(Digits(WFEREC), 5, 4)) as Fecha_Recap,
+           WMONGA as Moneda_Pais
         FROM IMOVAPUN01 a WHERE WTIPRE = 'R' ) r 
     ;
   // ****************************************************************************
@@ -822,6 +825,7 @@
     dcl-s textoError char(100) inz;
     dcl-s sqlError char(5) inz;
     dcl-s sqlMensaje char(70) inz;
+    dcl-s WSiglas_Moneda char(2) inz;
 
     dsDatosAsientoNoParametrizables.numApunte = WApunte;
     dsDatosAsientoNoParametrizables.fechaContable = fecproces ;
@@ -854,11 +858,22 @@
       return *off;
     endif;
 
+    Exec Sql
+      SELECT substring(libre1, 2, 2)
+      Into :WSiglas_Moneda
+      FROM PAIMON 
+      WHERE CLAMON = :DS_RECAP.Moneda_Pais
+      Limit 1
+    ;
+
+    If Sqlcode <> 0;
+      WSiglas_Moneda = 'EU'; // Por defecto Euros
+    Endif;
+
     dsAsifilen.cconce =
-      'RECAP ' +
-      DS_RECAP.Fecha_Recap + ' ' +
+      'RECAP ' + DS_RECAP.Fecha_Recap + ' ' +
       %trim(%Editc(%ABS(DS_RECAP.IMP_ORIG_NETO):'J'));
-    dsAsifilen.cctana = %editc(DS_RECAP.PAIS:'X');
+    dsAsifilen.cctana = %editc(DS_RECAP.PAIS:'X') + WSiglas_Moneda;
     dsAsifilen.crefop = %SubSt(%editc(DS_RECAP.RECAP:'X'): 2: 3);
 
     if not CONTABSRV_Grabar_Asiento(dsAsifilen
