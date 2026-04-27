@@ -1,0 +1,38 @@
+  PGM (&NomProc &NOMENV)
+    dcl  &NomProc  *char  10
+    dcl  &NOMENV   *char  10
+    dcl  &NUMAPU   *char   6
+
+    /*------------------------------------------------------*/
+    /* conc. asientos/anexos limpieza de bolsas             */
+    /*------------------------------------------------------*/
+    CALL       PGM(PARALELOC/COLIMBN) +
+               PARM('ASICOLIB'        +
+                    &NUMAPU)
+
+    /*------------------------------------------------------*/
+    /* Copia de Registros a Historicos                      */
+    /*------------------------------------------------------*/
+    CALL       PGM(CONTAB102)       +
+               PARM('ASICOLIB'      +
+                    'CABE29'        +
+                    'DETE29'        +
+                    &NOMENV         +
+                    'N'             +
+                    'T')
+
+    /*-------------------------------------------------------*/
+    /* Actualiza Auditoria Paralelo                          */
+    /*-------------------------------------------------------*/
+    Call CONTAB101 Parm(&NomProc    +
+                    'COLIMBN'       +
+                    'ASICOLIB'      +
+                    'CABE29'        +
+                    'DETE29'        +
+                    &NUMAPU         +
+                    &NOMENV)
+    /*--------------------------------*/
+    /* Fin del COLIMBN New            */
+    /*--------------------------------*/
+
+  endpgm
